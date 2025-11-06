@@ -108,4 +108,27 @@ sudo systemctl restart middle-good-scrolling.service
 
 ## Performance
 
-The Rust implementation uses **~1-2% CPU** during rapid mouse movements, compared to **~15% CPU** for the Python version. This makes it suitable for long-running daemon use with minimal system impact.
+The Rust implementation uses **~1-2% CPU** during rapid mouse movements, compared to **~5% CPU** for the Python version. This reduction is modest because most overhead comes from syscalls to `/dev/uinput`, which cost the same in any language.
+
+## Why Rust? (And Why Not Main Branch?)
+
+This Rust port was created to explore performance improvements. While it does reduce CPU usage slightly (~5% → ~1%), the primary benefits are:
+
+**Advantages:**
+- **No runtime dependencies** - single static binary
+- **Smaller installation footprint** - no Python runtime needed
+- **Slightly better performance** - ~4% CPU savings during intensive use
+- **Faster startup** (~10ms vs ~100ms)
+
+**Trade-offs:**
+- **Build complexity** - requires Rust toolchain (~400MB) and 30-60 second compile
+- **Harder to modify** - Python script is easier for users to tweak
+- **Overkill for this use case** - the performance gain is minimal for a background daemon
+
+**Decision:** For a small utility like this where most users build from source, the Python version (available in the `main` branch) offers better **simplicity-to-benefit ratio**. The Rust version is maintained in this branch for users who:
+- Want to distribute pre-built binaries
+- Prefer compiled languages
+- Are running on resource-constrained systems
+- Want to learn from a real-world Rust port
+
+For most users, **we recommend the Python version** from the main branch.
