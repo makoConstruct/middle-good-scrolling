@@ -1,16 +1,6 @@
 # middle good scrolling
 
-A mouse event interceptor that enables scrolling by holding the middle mouse button and dragging. It's not the same as the middle click scrolling you may have encountered on windows, for instance (you know, that thing where it creates a thing and then scrolls continuously as long as middle click is held) it's more like grabbing and dragging to scroll on mobile, but you can (and should) amplify the scroll speed so that it moves fast. The default scroll speed is delightfully high.
-
-## Features
-
-- Hold middle mouse button and drag to scroll in any direction
-- Vertical and horizontal scrolling support
-- You can configure scroll speed or invert the scroll direction
-- Automatically detects and works with multiple mice
-- Tries to exclude touchpads and touchscreens (this part's a bit hacky so far)
-- Runs as a system service
-- Preserves normal middle-click functionality (when not dragging)
+Hold middle mouse button and drag to scroll in any direction, fast. It's not like that middle click scrolling you may have encountered on windows, for instance, it's more like grabbing and dragging to scroll on mobile, but you can (and should) amplify the scroll speed so that it moves faster than a 1 to 1 drag gesture would. The default scroll speed (40) is delightfully high.
 
 ## Installation
 
