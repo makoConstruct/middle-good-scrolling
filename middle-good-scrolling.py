@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import evdev
 from evdev import UInput, ecodes as e
+import pyudev
 import sys
 import threading
 import os
@@ -44,19 +45,41 @@ def scroll_speed_for(distance_traveled, config):
     return config['SCROLL_SPEED'] * distance_traveled * (-1 if config['INVERT_SCROLL'] else 1)
 
 def find_all_mice():
-    devices = [evdev.InputDevice(path) for path in evdev.list_devices()]
+    """Find all mouse devices using udev for proper device classification"""
+    context = pyudev.Context()
     mice = []
-    for device in devices:
-        name_lower = device.name.lower()
-        # hacky way of detecting touchpads and touchscreens
-        # we filter them out because for some reason (??) they stop working when we grab them even though (I'm pretty sure) we forward all of their events
-        if any(skip in name_lower for skip in ['touchpad', 'trackpad', 'synaptics', 'elan', 'touchscreen']):
-            print(f"Skipping: {device.name} (touchpad/touchscreen)")
+
+    for device in context.list_devices(subsystem='input'):
+        # Only look at event devices
+        if not device.device_node or not device.device_node.startswith('/dev/input/event'):
             continue
-        caps = device.capabilities().get(e.EV_KEY, [])
-        if any(btn in caps for btn in [e.BTN_LEFT, e.BTN_RIGHT, e.BTN_MIDDLE]):
-            mice.append(device)
-            print(f"Found mouse: {device.name} ({device.path})")
+
+        # Use udev properties to properly identify mice
+        # ID_INPUT_MOUSE is set by udev for actual pointer devices
+        # Skip touchpads, touchscreens, tablets, etc.
+        if device.get('ID_INPUT_MOUSE') == '1':
+            # Explicitly skip touchpads and touchscreens even if they claim to be mice
+            if device.get('ID_INPUT_TOUCHPAD') == '1':
+                print(f"Skipping: {device.get('NAME', 'Unknown')} (touchpad)")
+                continue
+            if device.get('ID_INPUT_TOUCHSCREEN') == '1':
+                print(f"Skipping: {device.get('NAME', 'Unknown')} (touchscreen)")
+                continue
+            if device.get('ID_INPUT_TABLET') == '1':
+                print(f"Skipping: {device.get('NAME', 'Unknown')} (tablet)")
+                continue
+
+            try:
+                input_device = evdev.InputDevice(device.device_node)
+                # Double-check that it has mouse buttons
+                caps = input_device.capabilities().get(e.EV_KEY, [])
+                if any(btn in caps for btn in [e.BTN_LEFT, e.BTN_RIGHT, e.BTN_MIDDLE]):
+                    mice.append(input_device)
+                    print(f"Found mouse: {input_device.name} ({input_device.path})")
+            except (OSError, PermissionError) as ex:
+                print(f"Warning: Could not access {device.device_node}: {ex}")
+                continue
+
     return mice
 
 def handle_mouse(mouse, ui, shared_state, config):
