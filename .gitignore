@@ -1,9 +1,12 @@
-# Build artifacts
+# Build artifacts (PKGBUILD)
 pkg/
-src/
 *.tar.gz
 *.tar.xz
 *.pkg.tar.zst
+
+# Rust
+target/
+Cargo.lock
 
 # Python
 __pycache__/

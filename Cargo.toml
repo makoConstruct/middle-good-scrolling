@@ -1,0 +1,17 @@
+[package]
+name = "middle-good-scrolling"
+version = "0.1.0"
+edition = "2021"
+authors = ["makoConstruct"]
+description = "Mobile-style scrolling with the middle mouse button"
+license = "MIT"
+
+[dependencies]
+evdev = "0.12"
+udev = "0.8"
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+strip = true
