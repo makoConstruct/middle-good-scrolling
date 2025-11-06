@@ -8,7 +8,7 @@ import configparser
 
 # Default configuration
 DEFAULT_CONFIG = {
-    'DRAG_HYSTERESIS': 4,
+    'DRAG_HYSTERESIS': 2,
     'SCROLL_SPEED': 40,
     'INVERT_SCROLL': True
 }
@@ -41,14 +41,15 @@ def load_config():
     return config
 
 def scroll_speed_for(distance_traveled, config):
-    return config['SCROLL_SPEED'] * distance_traveled * (1 if config['INVERT_SCROLL'] else -1)
+    return config['SCROLL_SPEED'] * distance_traveled * (-1 if config['INVERT_SCROLL'] else 1)
 
 def find_all_mice():
     devices = [evdev.InputDevice(path) for path in evdev.list_devices()]
     mice = []
     for device in devices:
         name_lower = device.name.lower()
-        # hacky maybe
+        # hacky way of detecting touchpads and touchscreens
+        # we filter them out because for some reason (??) they stop working when we grab them even though (I'm pretty sure) we forward all of their events
         if any(skip in name_lower for skip in ['touchpad', 'trackpad', 'synaptics', 'elan', 'touchscreen']):
             print(f"Skipping: {device.name} (touchpad/touchscreen)")
             continue
@@ -70,23 +71,21 @@ def handle_mouse(mouse, ui, shared_state, config):
                 if event.value == 1:
                     shared_state['middle_pressed'] = True
                     # Don't forward the press event, only send a middle click when we know we're not scrolling (on release)
-                    # ui.write(e.EV_KEY, e.BTN_MIDDLE, 1)
-                    # ui.syn()
                 elif event.value == 0:
                     shared_state['middle_pressed'] = False
                     if shared_state['drag_distance_traveled'] < config['DRAG_HYSTERESIS']:
                         ui.write(e.EV_KEY, e.BTN_MIDDLE, 1)
                         ui.write(e.EV_KEY, e.BTN_MIDDLE, 0)
-                        ui.syn()
                     shared_state['drag_distance_traveled'] = 0
             elif event.type == e.EV_REL and shared_state['middle_pressed']:
                 shared_state['drag_distance_traveled'] += abs(event.value)
                 # Convert mouse movement to scroll events
+                # I don't know why but it seems like we have to invert the vertical scroll direction but not the horizontal. Maybe mouse and X11 coordinates are vertically flipped?
                 if event.code == e.REL_X:
                     ui.write(e.EV_REL, e.REL_HWHEEL_HI_RES, scroll_speed_for(event.value, config))
                     ui.syn()
                 elif event.code == e.REL_Y:
-                    ui.write(e.EV_REL, e.REL_WHEEL_HI_RES, scroll_speed_for(event.value, config))
+                    ui.write(e.EV_REL, e.REL_WHEEL_HI_RES, -scroll_speed_for(event.value, config))
                     ui.syn()
             else:
                 # Forward all other events unchanged
