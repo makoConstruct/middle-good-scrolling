@@ -1,0 +1,49 @@
+post_install() {
+    echo ""
+    echo "==> middle-good-scrolling has been installed!"
+    echo ""
+    echo "To start using middle-click scrolling:"
+    echo "  1. Enable and start the service:"
+    echo "     sudo systemctl enable --now middle-good-scrolling.service"
+    echo ""
+    echo "  2. Check the status:"
+    echo "     sudo systemctl status middle-good-scrolling.service"
+    echo ""
+    echo "  3. View logs if needed:"
+    echo "     sudo journalctl -u middle-good-scrolling.service -f"
+    echo ""
+    echo "Configuration:"
+    echo "  - System-wide: /etc/middle-good-scrolling.conf"
+    echo "  - Per-user: ~/.config/middle-good-scrolling.conf"
+    echo ""
+    echo "After editing config, restart the service:"
+    echo "  sudo systemctl restart middle-good-scrolling.service"
+    echo ""
+}
+
+post_upgrade() {
+    echo ""
+    echo "==> middle-good-scrolling has been upgraded!"
+    echo ""
+    echo "Restart the service to apply changes:"
+    echo "  sudo systemctl restart middle-good-scrolling.service"
+    echo ""
+}
+
+pre_remove() {
+    if systemctl is-active --quiet middle-good-scrolling.service; then
+        systemctl stop middle-good-scrolling.service
+    fi
+    if systemctl is-enabled --quiet middle-good-scrolling.service; then
+        systemctl disable middle-good-scrolling.service
+    fi
+}
+
+post_remove() {
+    echo ""
+    echo "==> middle-good-scrolling has been removed."
+    echo ""
+    echo "Configuration files have been left in place:"
+    echo "  - /etc/middle-good-scrolling.conf.pacsave (if modified)"
+    echo ""
+}

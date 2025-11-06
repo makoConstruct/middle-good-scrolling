@@ -1,0 +1,24 @@
+# Build artifacts
+pkg/
+src/
+*.tar.gz
+*.tar.xz
+*.pkg.tar.zst
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db

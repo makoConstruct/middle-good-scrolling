@@ -1,0 +1,20 @@
+[Unit]
+Description=Middle Mouse Button Scroll Interceptor
+After=multi-user.target
+Documentation=https://github.com/makoConstruct/middle-good-scrolling
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/middle-good-scrolling
+Restart=on-failure
+RestartSec=5s
+
+# Security hardening
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/dev/input /dev/uinput
+
+[Install]
+WantedBy=multi-user.target
