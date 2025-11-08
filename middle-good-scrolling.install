@@ -1,4 +1,5 @@
 post_install() {
+    # we're apparently the only arch package that enables a service automatically, which I find baffling. There are so many userspace packages that activate features automatically after being installed, we don't see what makes systemd services any different from the rest of them
     systemctl enable --now middle-good-scrolling.service
 }
 
