@@ -9,7 +9,7 @@ license=('MIT')
 depends=('python' 'python-evdev' 'python-pyudev')
 backup=('etc/middle-good-scrolling.conf')
 install="${pkgname}.install"
-source=("middle-good-scrolling.py"
+source=("middle-good-scrolling"
         "middle-good-scrolling.service"
         "middle-good-scrolling.conf"
         "80-middle-good-scrolling.preset")
@@ -19,8 +19,7 @@ sha256sums=('SKIP'
             'SKIP')
 
 package() {
-    # Install the main script (without .py extension)
-    install -Dm755 "${srcdir}/middle-good-scrolling.py" "${pkgdir}/usr/bin/middle-good-scrolling"
+    install -Dm755 "${srcdir}/middle-good-scrolling" "${pkgdir}/usr/bin/middle-good-scrolling"
 
     # Install systemd service
     install -Dm644 "${srcdir}/middle-good-scrolling.service" "${pkgdir}/usr/lib/systemd/system/middle-good-scrolling.service"

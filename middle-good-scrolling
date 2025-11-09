@@ -1,0 +1,419 @@
+#!/usr/bin/env python3
+import math
+from math import sqrt, cosh, acosh, asin, log, sin, atan2, pi, cos
+import evdev
+from evdev import UInput, ecodes as e
+import pyudev
+import sys
+import threading
+import os
+import configparser
+from dataclasses import dataclass
+import time
+
+
+# ideally most of this would be measured in mms rather than pixels, I haven't looked into it. Generally, computers don't give you accurate mms per pixel. Device manufacturers (and desktop environments) are in a state of sin and don't even try to provide it. So we just use pixels.
+@dataclass
+class Config:
+    """Configuration settings for middle-click scrolling"""
+    # Scroll speed multiplier
+    # Higher values = faster scrolling
+    scroll_speed: float = 30.0
+    # Invert scroll direction
+    # true = material scrolling (drag down to move the page contents down, which means scrolling up)
+    # false = vulgar scrolling (drag down to scroll down, which means moving the page contents up)
+    invert_scroll: bool = True
+    # the distance it has to travel along the horizontal axis before horizontal scrolling will go through. It's also required that horizontal distance exceeds a certain angle, see below
+    horizontal_movement_threshold: float = 8.0
+    # How far (in pixels) to drag before considering it an intentional scroll and blocking the middle click events
+    # Lower values = more sensitive. It's acceptable for this to be 1. It shouldn't be set to 0.
+    drag_slop: float = 4.0
+    # the distance it has to travel along the vertical axis before vertical scrolling will go through.
+    vertical_movement_threshold: float = 1.0
+    # if false, the software will do nothing and exit
+    enable: bool = True
+    # the limit on the length of the accumulator vector. The lower it is, the faster the perceived angle will seem to change. If it's too low, input device jitter will cause incorrect scrolling. Needs to be higher than both horizontal_movement_threshold and vertical_movement_threshold.
+    accumulator_vector_limit: float = 10.0
+
+def load_config() -> Config:
+    """Load configuration from file or use defaults"""
+    config = Config()
+    config_paths = [
+        '/etc/middle-good-scrolling.conf',
+        os.path.expanduser('~/.config/middle-good-scrolling.conf')
+    ]
+
+    parser = configparser.ConfigParser()
+    for path in config_paths:
+        if os.path.exists(path):
+            try:
+                parser.read(path)
+                if 'Settings' in parser:
+                    if 'drag_slop' in parser['Settings']:
+                        config.drag_slop = parser.getfloat('Settings', 'drag_slop')
+                    if 'scroll_speed' in parser['Settings']:
+                        config.scroll_speed = parser.getfloat('Settings', 'scroll_speed')
+                    if 'invert_scroll' in parser['Settings']:
+                        config.invert_scroll = parser.getboolean('Settings', 'invert_scroll')
+                    if 'horizontal_movement_threshold' in parser['Settings']:
+                        config.horizontal_movement_threshold = parser.getfloat('Settings', 'horizontal_movement_threshold')
+                    if 'vertical_movement_threshold' in parser['Settings']:
+                        config.vertical_movement_threshold = parser.getfloat('Settings', 'vertical_movement_threshold')
+                    if 'accumulator_vector_limit' in parser['Settings']:
+                        config.accumulator_vector_limit = parser.getfloat('Settings', 'accumulator_vector_limit')
+                    if 'enable' in parser['Settings']:
+                        config.enable = parser.getboolean('Settings', 'enable')
+                print(f"Loaded config from: {path}")
+                break
+            except Exception as ex:
+                print(f"Warning: Error reading config from {path}: {ex}")
+
+    if config.accumulator_vector_limit < config.horizontal_movement_threshold or config.accumulator_vector_limit < config.vertical_movement_threshold:
+        print("Warning: accumulator_vector_limit is less than horizontal_movement_threshold or vertical_movement_threshold, this will cause incorrect scrolling. Setting accumulator_vector_limit to the higher of the two.")
+        config.accumulator_vector_limit = max(config.horizontal_movement_threshold, config.vertical_movement_threshold)
+    return config
+
+@dataclass
+class State:
+    """Shared state for mouse event handling across threads"""
+    middle_pressed: bool = False
+    accumulator_vector: tuple[float, float] = (0.0, 0.0)
+    has_started_horizontal_scroll: bool = False
+    has_started_vertical_scroll: bool = False
+    lock: threading.Lock = None  # Thread lock for safe access
+
+    def __post_init__(self):
+        if self.lock is None:
+            self.lock = threading.Lock()
+
+# tombstone: This is a slightly imperfect solution to keeping a rolling average of a vector by length-limiting, it's framerate-dependent. I spent like a day assembling a framerate-independent implementation of this (ie, an implementation that would produce equivalent results for the cases `limited_vector_add(limited_vector_add(v, pull/2, limit), pull/2, limit))` and `limited_vector_add(v, pull, limit)`, and I got it together, but I decided at the end of it that it wasn't worth the trouble of testing it. But the code is in [tractrix pull tombstone.py](./tractrix pull tombstone.py).
+def limited_vector_add(v: tuple[float, float], pull: tuple[float, float], limit: float) -> tuple[float, float]:
+    nv = add(v, pull)
+    m = magnitude(nv)
+    if m > limit:
+        return multiply(nv, limit/m)
+    return nv
+def add(a: tuple[float, float], b: tuple[float, float]) -> tuple[float, float]:
+    return (a[0] + b[0], a[1] + b[1])
+def magnitude(v: tuple[float, float]) -> float:
+    return math.sqrt(v[0]**2 + v[1]**2)
+def multiply(v: tuple[float, float], scalar: float) -> tuple[float, float]:
+    return (v[0] * scalar, v[1] * scalar)
+def is_more_horizontal_than_vertical(v: tuple[float, float]) -> bool:
+    return not is_more_vertical_than_horizontal(v)
+def is_more_vertical_than_horizontal(v: tuple[float, float]) -> bool:
+    return abs(v[1]) >= abs(v[0])
+
+def scroll_speed_for(distance_traveled: float, config: Config) -> int:
+    return int(round(config.scroll_speed * distance_traveled * (-1 if config.invert_scroll else 1)))
+
+def find_all_mice():
+    """Find all mouse devices using udev for proper device classification"""
+    context = pyudev.Context()
+    mice = []
+
+    for device in context.list_devices(subsystem='input'):
+        # Only look at event devices
+        if not device.device_node or not device.device_node.startswith('/dev/input/event'):
+            continue
+
+        # Use udev properties to properly identify mice
+        # ID_INPUT_MOUSE is set by udev for actual pointer devices
+        # Skip touchpads, touchscreens, tablets, etc.
+        if device.get('ID_INPUT_MOUSE') == '1':
+            # Explicitly skip touchpads and touchscreens even if they claim to be mice
+            if device.get('ID_INPUT_TOUCHPAD') == '1':
+                print(f"Skipping: {device.get('NAME', 'Unknown')} (touchpad)")
+                continue
+            if device.get('ID_INPUT_TOUCHSCREEN') == '1':
+                print(f"Skipping: {device.get('NAME', 'Unknown')} (touchscreen)")
+                continue
+            if device.get('ID_INPUT_TABLET') == '1':
+                print(f"Skipping: {device.get('NAME', 'Unknown')} (tablet)")
+                continue
+
+            try:
+                input_device = evdev.InputDevice(device.device_node)
+                # Double-check that it has mouse buttons
+                caps = input_device.capabilities().get(e.EV_KEY, [])
+                if any(btn in caps for btn in [e.BTN_LEFT, e.BTN_RIGHT, e.BTN_MIDDLE]):
+                    mice.append(input_device)
+                    print(f"Found mouse: {input_device.name} ({input_device.path})")
+            except (OSError, PermissionError) as ex:
+                print(f"Warning: Could not access {device.device_node}: {ex}")
+                continue
+
+    return mice
+
+def handle_mouse(mouse, ui, shared_state, config):
+    print(f"Listening to: {mouse.name} ({mouse.path})")
+
+    # Grab the device to intercept all events
+    try:
+        mouse.grab()
+    except (OSError, IOError) as ex:
+        print(f"Failed to grab {mouse.name}: {ex}")
+        return
+
+    try:
+        for event in mouse.read_loop():
+            if event.type == e.EV_KEY and event.code == e.BTN_MIDDLE:
+                with shared_state.lock:
+                    if event.value == 1:
+                        shared_state.middle_pressed = True
+                        # Don't forward the press event, only send a middle click when we know we're not scrolling (on release)
+                    elif event.value == 0:
+                        was_pressed = shared_state.middle_pressed
+                        drag_magnitude = magnitude(shared_state.accumulator_vector)
+                        has_scrolled = shared_state.has_started_horizontal_scroll or shared_state.has_started_vertical_scroll
+                        shared_state.middle_pressed = False
+                        shared_state.has_started_horizontal_scroll = False
+                        shared_state.has_started_vertical_scroll = False
+                        shared_state.accumulator_vector = (0.0, 0.0)
+
+                        # Send middle click if we didn't scroll enough
+                        if was_pressed and drag_magnitude < config.drag_slop:
+                            ui.write(e.EV_KEY, e.BTN_MIDDLE, 1)
+                            ui.write(e.EV_KEY, e.BTN_MIDDLE, 0)
+                            ui.syn()
+
+            elif event.type == e.EV_REL:
+                with shared_state.lock:
+                    if shared_state.middle_pressed:
+                        # Convert mouse movement to scroll events
+                        # I don't know why but it seems like we have to invert the vertical scroll direction but not the horizontal. Maybe mouse and X11 coordinates are vertically flipped?
+                        if event.code == e.REL_X:
+                            # decide whether to unlock horizontal scroll on this event, or if it already is, be free
+                            shared_state.accumulator_vector = limited_vector_add(shared_state.accumulator_vector, (event.value, 0.0), config.accumulator_vector_limit)
+                            moving_by = 0
+                            if (
+                                not shared_state.has_started_horizontal_scroll and
+                                magnitude(shared_state.accumulator_vector) > config.horizontal_movement_threshold and
+                                is_more_horizontal_than_vertical(shared_state.accumulator_vector)
+                            ):
+                                shared_state.has_started_horizontal_scroll = True
+                                moving_by = shared_state.accumulator_vector[0]
+                            else:
+                                if shared_state.has_started_horizontal_scroll:
+                                    moving_by = event.value
+                                else:
+                                    moving_by = 0
+                            ui.write(e.EV_REL, e.REL_HWHEEL_HI_RES, scroll_speed_for(moving_by, config))
+                            ui.syn()
+                        elif event.code == e.REL_Y:
+                            shared_state.accumulator_vector = limited_vector_add(shared_state.accumulator_vector, (0.0, -event.value), config.accumulator_vector_limit)
+                            moving_by = 0
+                            if (
+                                not shared_state.has_started_vertical_scroll and
+                                magnitude(shared_state.accumulator_vector) > config.vertical_movement_threshold and
+                                is_more_vertical_than_horizontal(shared_state.accumulator_vector)
+                            ):
+                                moving_by = shared_state.accumulator_vector[1]
+                                shared_state.has_started_vertical_scroll = True
+                            else:
+                                if shared_state.has_started_vertical_scroll:
+                                    moving_by = event.value
+                                else:
+                                    moving_by = 0
+                            ui.write(e.EV_REL, e.REL_WHEEL_HI_RES, -scroll_speed_for(moving_by, config))
+                            ui.syn()
+                        else:
+                            # Forward other relative events unchanged
+                            ui.write(event.type, event.code, event.value)
+                            ui.syn()
+                    else:
+                        # Forward events when middle button not pressed
+                        ui.write(event.type, event.code, event.value)
+                        ui.syn()
+
+            else:
+                # Forward all other events unchanged
+                ui.write(event.type, event.code, event.value)
+                ui.syn()
+
+    except (OSError, IOError) as ex:
+        # Device disconnected or I/O error
+        print(f"Device disconnected: {mouse.name} ({mouse.path})")
+        print(f"  Reason: {ex}")
+    except Exception as ex:
+        print(f"Unexpected error with {mouse.name}: {ex}")
+        import traceback
+        traceback.print_exc()
+    finally:
+        # Always ungrab the device on exit
+        try:
+            mouse.ungrab()
+            print(f"Stopped listening to: {mouse.name}")
+        except:
+            pass  # Device might already be gone
+
+def monitor_devices(ui, shared_state, config, active_threads, active_threads_lock, stop_event, virtual_device_path):
+    """Monitor for device connection/disconnection events"""
+    print("Starting device monitor...")
+    context = pyudev.Context()
+    monitor = pyudev.Monitor.from_netlink(context)
+    monitor.filter_by(subsystem='input')
+
+    for device in iter(monitor.poll, None):
+        if stop_event.is_set():
+            break
+
+        # Only process event devices
+        if not device.device_node or not device.device_node.startswith('/dev/input/event'):
+            continue
+
+        if device.action == 'add' and device.get('ID_INPUT_MOUSE') == '1':
+            # Skip touchpads, touchscreens, tablets
+            if device.get('ID_INPUT_TOUCHPAD') == '1':
+                continue
+            if device.get('ID_INPUT_TOUCHSCREEN') == '1':
+                continue
+            if device.get('ID_INPUT_TABLET') == '1':
+                continue
+
+            # Check if this device is already being handled
+            with active_threads_lock:
+                if device.device_node in active_threads:
+                    continue
+
+            # Skip our own virtual device
+            if device.device_node == virtual_device_path:
+                continue
+
+            # Give the device a moment to settle
+            time.sleep(0.02)
+
+            try:
+                input_device = evdev.InputDevice(device.device_node)
+
+                # Double-check it's not our virtual device by name
+                if 'middle-click-scroller' in input_device.name:
+                    continue
+
+                # Check that it has mouse buttons
+                caps = input_device.capabilities().get(e.EV_KEY, [])
+                if any(btn in caps for btn in [e.BTN_LEFT, e.BTN_RIGHT, e.BTN_MIDDLE]):
+                    # Double-check it's not already being handled (race condition check)
+                    with active_threads_lock:
+                        if input_device.path in active_threads:
+                            continue
+
+                        print(f"\n=== New mouse connected: {input_device.name} ({input_device.path}) ===")
+
+                        # Start a handler thread for the new device
+                        thread = threading.Thread(
+                            target=handle_mouse,
+                            args=(input_device, ui, shared_state, config)
+                        )
+                        thread.daemon = True
+                        thread.start()
+
+                        # Store thread reference
+                        active_threads[input_device.path] = thread
+
+            except (OSError, PermissionError) as ex:
+                print(f"Warning: Could not access newly connected device {device.device_node}: {ex}")
+
+        elif device.action == 'remove':
+            # Device removed - thread will exit automatically when read_loop fails
+            device_path = device.device_node
+            print(f"\n=== Device removed: {device_path} ===")
+            # Clean up thread reference
+            with active_threads_lock:
+                if device_path in active_threads:
+                    del active_threads[device_path]
+
+def main():
+    # Load configuration
+    config = load_config()
+    print(f"Configuration: drag_slop={config.drag_slop}, scroll_speed={config.scroll_speed}, invert_scroll={config.invert_scroll}")
+    
+    if not config.enable:
+        print("middle good scrolling has 'enabled' set to false in configuration, exiting.")
+        sys.exit(0)
+
+    mice = find_all_mice()
+
+    if not mice:
+        print("No mice found!")
+        sys.exit(1)
+
+    print(f"Found {len(mice)} mouse device(s)")
+
+    # Create UInput with button and scroll wheel capabilities
+    # We need to forward all mouse events, so we need to get the capabilities from a mouse
+    if mice:
+        # Use the first mouse's capabilities as a template
+        mouse_caps = mice[0].capabilities()
+        cap = {}
+        if e.EV_KEY in mouse_caps:
+            cap[e.EV_KEY] = mouse_caps[e.EV_KEY]
+        if e.EV_REL in mouse_caps:
+            rel_caps = mouse_caps[e.EV_REL].copy()
+            # Ensure we have scroll wheel capabilities
+            scroll_caps = [e.REL_HWHEEL_HI_RES, e.REL_WHEEL_HI_RES]
+            for sc in scroll_caps:
+                if sc not in rel_caps:
+                    rel_caps.append(sc)
+            cap[e.EV_REL] = rel_caps
+    else:
+        # Fallback if no mice found (shouldn't happen)
+        cap = {
+            e.EV_KEY: [e.BTN_LEFT, e.BTN_RIGHT, e.BTN_MIDDLE],
+            e.EV_REL: [e.REL_X, e.REL_Y, e.REL_HWHEEL_HI_RES, e.REL_WHEEL_HI_RES],
+        }
+
+    ui = UInput(cap, name='middle-click-scroller')
+    print(f"Created virtual input device: {ui.device.name}")
+    virtual_device_path = ui.device.path
+    print(f"Virtual device path: {virtual_device_path}")
+
+    # Shared state across all mouse handler threads
+    shared_state = State()
+
+    # Track active threads and create stop event for clean shutdown
+    active_threads = {}
+    active_threads_lock = threading.Lock()
+    stop_event = threading.Event()
+
+    # Start handler threads for initial mice
+    for mouse in mice:
+        thread = threading.Thread(target=handle_mouse, args=(mouse, ui, shared_state, config))
+        thread.daemon = True
+        thread.start()
+        active_threads[mouse.path] = thread
+
+    # Start device monitor thread for hot-plug detection
+    monitor_thread = threading.Thread(
+        target=monitor_devices,
+        args=(ui, shared_state, config, active_threads, active_threads_lock, stop_event, virtual_device_path)
+    )
+    monitor_thread.daemon = True
+    monitor_thread.start()
+
+    print("\n=== Ready! Hold middle-click and move mouse ===")
+    print("=== Monitoring for device changes... ===\n")
+
+    try:
+        # Keep the main thread alive and periodically clean up dead threads
+        while True:
+            time.sleep(1)
+
+            # Clean up threads that have finished (devices that disconnected)
+            with active_threads_lock:
+                dead_paths = [path for path, thread in active_threads.items() if not thread.is_alive()]
+                for path in dead_paths:
+                    del active_threads[path]
+
+            # If all mice are gone, wait for new ones
+            if not active_threads:
+                print("No active mice. Waiting for devices to be connected...")
+
+    except KeyboardInterrupt:
+        print("\nStopping...")
+    finally:
+        stop_event.set()
+        ui.close()
+
+if __name__ == "__main__":
+    main()
