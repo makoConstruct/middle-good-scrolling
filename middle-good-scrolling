@@ -278,7 +278,6 @@ def monitor_devices(ui, shared_state, config, active_threads, active_threads_loc
 
             # Skip our own virtual device
             if device.device_node == virtual_device_path:
-                print(f"[DEBUG] Skipping our own virtual device: {device.device_node}")
                 continue
 
             # Give the device a moment to settle
@@ -289,7 +288,6 @@ def monitor_devices(ui, shared_state, config, active_threads, active_threads_loc
 
                 # Double-check it's not our virtual device by name
                 if 'middle-click-scroller' in input_device.name:
-                    print(f"[DEBUG] Skipping virtual device by name: {input_device.name}")
                     continue
 
                 # Check that it has mouse buttons
