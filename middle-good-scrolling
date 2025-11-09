@@ -271,6 +271,11 @@ def monitor_devices(ui, shared_state, config, active_threads, active_threads_loc
             if device.get('ID_INPUT_TABLET') == '1':
                 continue
 
+            # Check if this device is already being handled
+            with active_threads_lock:
+                if device.device_node in active_threads:
+                    continue
+
             # Give the device a moment to settle
             time.sleep(0.5)
 
@@ -279,6 +284,11 @@ def monitor_devices(ui, shared_state, config, active_threads, active_threads_loc
                 # Check that it has mouse buttons
                 caps = input_device.capabilities().get(e.EV_KEY, [])
                 if any(btn in caps for btn in [e.BTN_LEFT, e.BTN_RIGHT, e.BTN_MIDDLE]):
+                    # Double-check it's not already being handled (race condition check)
+                    with active_threads_lock:
+                        if input_device.path in active_threads:
+                            continue
+
                     print(f"\n=== New mouse connected: {input_device.name} ({input_device.path}) ===")
 
                     # Start a handler thread for the new device
