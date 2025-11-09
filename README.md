@@ -1,15 +1,15 @@
 # fast middle click scrolling
 
-Hold middle mouse button and drag to scroll in any direction, fast. It's not like that middle click scrolling you may have encountered on windows, for instance, it's more like grabbing and dragging to scrolling is on mobile, but better, because you can (and should, and will by default) amplify the scroll speed so that it moves faster than a 1 to 1 drag gesture would. The default scroll speed is delightfully high. Note that this also gives you easy horizontal scrolling, can your mouse scroll wheel do that? Probably not. (*and don't worry, we do a special thing to prevent unintentional horizontal scroll movement from going through, see "accumulator_vector"*)
+Hold middle mouse button and drag to scroll, deftly. It's not like that middle click scrolling you may have encountered on windows, for instance, it's more like scrolling is on mobile, but better, because you can (and should, and will by default) amplify the scroll speed so that it moves faster than a 1 to 1 drag gesture would. The default scroll speed is delightfully high. You also get horizontal scrolling. (*and don't worry, we do a special thing to prevent unintentional horizontal scroll movement from going through, see "accumulator_vector"*)
 
-The behavior is a lot like clicking and dragging the scrollbar tab, but it's better than that in several ways. 1: you don't have to locate and scroll over to the mouse tab, which saves time because they're often hidden at first and then a narrow enough target that grabbing them is annoying to do. 2: Scroll tab leverage varies wildly, almost randomly. Sometimes a scroll tab will be very small and so any mouse motion will translate to far too much view movement, while at other times it'll be large and your scroll leverage will be disappointingly weak. Our position is that the size and leverage of a scroll tab shouldn't vary depending on the size of the view. Some few apps (ripcord) accept this position, but most don't. So most of the time you're gonna prefer *fast middle click scrolling* over the scroll tab.
+The behavior is a lot like clicking and dragging the scrollbar tab, but it's better than that in several ways. 1: you don't have to locate and mouse over to the mouse tab (just have the mouse somewhere in the page), which saves time because they're often hidden at first and they're a narrow enough target that grabbing them is annoying to do. 2: Scroll tab leverage varies wildly, almost randomly, sometimes a scroll tab will be very small and so any mouse motion will translate to far too much view movement, while at other times it'll be large and your scroll leverage will be disappointingly weak. Our position is that the size and leverage of a scroll tab shouldn't vary depending on the size of the page. Some apps (ripcord) agree with this position and alter their scrollbar behavior appropriately, and for those apps we wouldn't consider middle-good-scrolling to be necessary, but most apps are asleep on this. So most of the time you're gonna prefer *fast middle click scrolling* over the scroll tab.
 
 ## Installation
 
 ### Arch Linux
 
 ```bash
-paru -U fast-middle-click-scrolling
+paru -U middle-good-scrolling
 ```
 
 ### Other Platforms
@@ -19,10 +19,8 @@ Dunno. mako might do a debian/ubuntu version soon. Really though, we think this 
 ## Configuration and Management
 
 Configuration files are read in order of precedence:
-1. `~/.config/fast-middle-click-scrolling.conf` (per-user)
-2. `/etc/fast-middle-click-scrolling.conf` (system-wide)
-
-You can then restart it using `systemctl restart --now middle-good-scrolling`
+1. `~/.config/middle-good-scrolling.conf` (per-user) (it wont be there at first, copy it using `cp /etc/middle-good-scrolling.conf ~/.config/middle-good-scrolling.conf`)
+2. `/etc/middle-good-scrolling.conf` (system-wide)
 
 Config example (this is the default):
 
@@ -56,5 +54,5 @@ accumulator_vector_limit = 10.0
 
 After changing configuration, restart the service:
 ```bash
-sudo systemctl restart middle-good-scrolling.service
+sudo systemctl restart middle-good-scrolling
 ```

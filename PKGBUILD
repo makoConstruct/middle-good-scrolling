@@ -20,13 +20,7 @@ sha256sums=('SKIP'
 
 package() {
     install -Dm755 "${srcdir}/middle-good-scrolling" "${pkgdir}/usr/bin/middle-good-scrolling"
-
-    # Install systemd service
     install -Dm644 "${srcdir}/middle-good-scrolling.service" "${pkgdir}/usr/lib/systemd/system/middle-good-scrolling.service"
-
-    # Install systemd preset
     install -Dm644 "${srcdir}/80-middle-good-scrolling.preset" "${pkgdir}/usr/lib/systemd/system-preset/80-middle-good-scrolling.preset"
-
-    # Install configuration file
     install -Dm644 "${srcdir}/middle-good-scrolling.conf" "${pkgdir}/etc/middle-good-scrolling.conf"
 }

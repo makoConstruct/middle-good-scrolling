@@ -334,12 +334,6 @@ def main():
 
     mice = find_all_mice()
 
-    if not mice:
-        print("No mice found!")
-        sys.exit(1)
-
-    print(f"Found {len(mice)} mouse device(s)")
-
     # Create UInput with button and scroll wheel capabilities
     # We need to forward all mouse events, so we need to get the capabilities from a mouse
     if mice:
