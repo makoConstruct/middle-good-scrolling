@@ -11,8 +11,10 @@ backup=('etc/middle-good-scrolling.conf')
 install="${pkgname}.install"
 source=("middle-good-scrolling"
         "middle-good-scrolling.service"
-        "middle-good-scrolling.conf")
+        "middle-good-scrolling.conf"
+        "80-middle-good-scrolling.preset")
 sha256sums=('SKIP'
+            'SKIP'
             'SKIP'
             'SKIP')
 
@@ -21,6 +23,9 @@ package() {
 
     # Install systemd service
     install -Dm644 "${srcdir}/middle-good-scrolling.service" "${pkgdir}/usr/lib/systemd/system/middle-good-scrolling.service"
+
+    # Install systemd preset
+    install -Dm644 "${srcdir}/80-middle-good-scrolling.preset" "${pkgdir}/usr/lib/systemd/system-preset/80-middle-good-scrolling.preset"
 
     # Install configuration file
     install -Dm644 "${srcdir}/middle-good-scrolling.conf" "${pkgdir}/etc/middle-good-scrolling.conf"
