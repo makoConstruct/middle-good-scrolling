@@ -281,7 +281,7 @@ def monitor_devices(ui, shared_state, config, active_threads, active_threads_loc
                 continue
 
             # Give the device a moment to settle
-            time.sleep(0.5)
+            time.sleep(0.02)
 
             try:
                 input_device = evdev.InputDevice(device.device_node)
