@@ -201,7 +201,7 @@ def handle_mouse(mouse, ui, shared_state, config):
                             ui.write(e.EV_REL, e.REL_HWHEEL_HI_RES, scroll_speed_for(moving_by, config))
                             ui.syn()
                         elif event.code == e.REL_Y:
-                            shared_state.accumulator_vector = limited_vector_add(shared_state.accumulator_vector, (0.0, -event.value), config.accumulator_vector_limit)
+                            shared_state.accumulator_vector = limited_vector_add(shared_state.accumulator_vector, (0.0, event.value), config.accumulator_vector_limit)
                             moving_by = 0
                             if (
                                 not shared_state.has_started_vertical_scroll and
