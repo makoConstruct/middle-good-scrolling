@@ -247,7 +247,7 @@ def handle_mouse(mouse, ui, shared_state, config):
         except:
             pass  # Device might already be gone
 
-def monitor_devices(ui, shared_state, config, active_threads, active_threads_lock, stop_event):
+def monitor_devices(ui, shared_state, config, active_threads, active_threads_lock, stop_event, virtual_device_path):
     """Monitor for device connection/disconnection events"""
     print("Starting device monitor...")
     context = pyudev.Context()
@@ -271,28 +271,33 @@ def monitor_devices(ui, shared_state, config, active_threads, active_threads_loc
             if device.get('ID_INPUT_TABLET') == '1':
                 continue
 
-            print(f"[DEBUG] Device 'add' event: {device.device_node}")
-
             # Check if this device is already being handled
             with active_threads_lock:
-                print(f"[DEBUG] Currently tracked devices: {list(active_threads.keys())}")
                 if device.device_node in active_threads:
-                    print(f"[DEBUG] Device {device.device_node} already tracked, skipping")
                     continue
+
+            # Skip our own virtual device
+            if device.device_node == virtual_device_path:
+                print(f"[DEBUG] Skipping our own virtual device: {device.device_node}")
+                continue
 
             # Give the device a moment to settle
             time.sleep(0.5)
 
             try:
                 input_device = evdev.InputDevice(device.device_node)
+
+                # Double-check it's not our virtual device by name
+                if 'middle-click-scroller' in input_device.name:
+                    print(f"[DEBUG] Skipping virtual device by name: {input_device.name}")
+                    continue
+
                 # Check that it has mouse buttons
                 caps = input_device.capabilities().get(e.EV_KEY, [])
                 if any(btn in caps for btn in [e.BTN_LEFT, e.BTN_RIGHT, e.BTN_MIDDLE]):
                     # Double-check it's not already being handled (race condition check)
                     with active_threads_lock:
-                        print(f"[DEBUG] Checking if {input_device.path} is in {list(active_threads.keys())}")
                         if input_device.path in active_threads:
-                            print(f"[DEBUG] Device {input_device.path} already tracked, skipping")
                             continue
 
                     print(f"\n=== New mouse connected: {input_device.name} ({input_device.path}) ===")
@@ -363,6 +368,8 @@ def main():
 
     ui = UInput(cap, name='middle-click-scroller')
     print(f"Created virtual input device: {ui.device.name}")
+    virtual_device_path = ui.device.path
+    print(f"Virtual device path: {virtual_device_path}")
 
     # Shared state across all mouse handler threads
     shared_state = State()
@@ -378,12 +385,11 @@ def main():
         thread.daemon = True
         thread.start()
         active_threads[mouse.path] = thread
-        print(f"Tracking device: {mouse.path}")
 
     # Start device monitor thread for hot-plug detection
     monitor_thread = threading.Thread(
         target=monitor_devices,
-        args=(ui, shared_state, config, active_threads, active_threads_lock, stop_event)
+        args=(ui, shared_state, config, active_threads, active_threads_lock, stop_event, virtual_device_path)
     )
     monitor_thread.daemon = True
     monitor_thread.start()
