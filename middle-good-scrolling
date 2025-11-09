@@ -271,9 +271,13 @@ def monitor_devices(ui, shared_state, config, active_threads, active_threads_loc
             if device.get('ID_INPUT_TABLET') == '1':
                 continue
 
+            print(f"[DEBUG] Device 'add' event: {device.device_node}")
+
             # Check if this device is already being handled
             with active_threads_lock:
+                print(f"[DEBUG] Currently tracked devices: {list(active_threads.keys())}")
                 if device.device_node in active_threads:
+                    print(f"[DEBUG] Device {device.device_node} already tracked, skipping")
                     continue
 
             # Give the device a moment to settle
@@ -286,7 +290,9 @@ def monitor_devices(ui, shared_state, config, active_threads, active_threads_loc
                 if any(btn in caps for btn in [e.BTN_LEFT, e.BTN_RIGHT, e.BTN_MIDDLE]):
                     # Double-check it's not already being handled (race condition check)
                     with active_threads_lock:
+                        print(f"[DEBUG] Checking if {input_device.path} is in {list(active_threads.keys())}")
                         if input_device.path in active_threads:
+                            print(f"[DEBUG] Device {input_device.path} already tracked, skipping")
                             continue
 
                     print(f"\n=== New mouse connected: {input_device.name} ({input_device.path}) ===")
@@ -372,6 +378,7 @@ def main():
         thread.daemon = True
         thread.start()
         active_threads[mouse.path] = thread
+        print(f"Tracking device: {mouse.path}")
 
     # Start device monitor thread for hot-plug detection
     monitor_thread = threading.Thread(
