@@ -89,7 +89,7 @@ def limited_vector_add(v: tuple[float, float], pull: tuple[float, float], limit:
     return nv
 def add(a: tuple[float, float], b: tuple[float, float]) -> tuple[float, float]:
     return (a[0] + b[0], a[1] + b[1])
-def magnitude(v: tuple[floaccumulatat, float]) -> float:
+def magnitude(v: tuple[float, float]) -> float:
     return math.sqrt(v[0]**2 + v[1]**2)
 def multiply(v: tuple[float, float], scalar: float) -> tuple[float, float]:
     return (v[0] * scalar, v[1] * scalar)
