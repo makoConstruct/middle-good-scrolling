@@ -172,7 +172,7 @@ def handle_mouse(mouse, ui, shared_state, config):
                         shared_state.accumulator_vector = (0.0, 0.0)
 
                         # Send middle click if we didn't scroll enough
-                        if was_pressed and has_scrolled and drag_magnitude < config.drag_slop:
+                        if was_pressed and drag_magnitude < config.drag_slop:
                             ui.write(e.EV_KEY, e.BTN_MIDDLE, 1)
                             ui.write(e.EV_KEY, e.BTN_MIDDLE, 0)
                             ui.syn()
@@ -300,18 +300,17 @@ def monitor_devices(ui, shared_state, config, active_threads, active_threads_loc
                         if input_device.path in active_threads:
                             continue
 
-                    print(f"\n=== New mouse connected: {input_device.name} ({input_device.path}) ===")
+                        print(f"\n=== New mouse connected: {input_device.name} ({input_device.path}) ===")
 
-                    # Start a handler thread for the new device
-                    thread = threading.Thread(
-                        target=handle_mouse,
-                        args=(input_device, ui, shared_state, config)
-                    )
-                    thread.daemon = True
-                    thread.start()
+                        # Start a handler thread for the new device
+                        thread = threading.Thread(
+                            target=handle_mouse,
+                            args=(input_device, ui, shared_state, config)
+                        )
+                        thread.daemon = True
+                        thread.start()
 
-                    # Store thread reference
-                    with active_threads_lock:
+                        # Store thread reference
                         active_threads[input_device.path] = thread
 
             except (OSError, PermissionError) as ex:
