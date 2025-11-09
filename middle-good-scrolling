@@ -20,9 +20,9 @@ class Config:
     # Higher values = faster scrolling
     scroll_speed: float = 30.0
     # Invert scroll direction
-    # true = material scrolling (drag down to move the page contents down, which means scrolling up)
-    # false = vulgar scrolling (drag down to scroll down, which means moving the page contents up)
-    invert_scroll: bool = True
+    # true = page scrolling (drag down to move the page contents down, which means moving the view up)
+    # false = view scrolling (drag down to move the view down, which means moving the page contents up)
+    invert_scroll: bool = False
     # the distance it has to travel along the horizontal axis before horizontal scrolling will go through. It's also required that horizontal distance exceeds a certain angle, see below
     horizontal_movement_threshold: float = 8.0
     # How far (in pixels) to drag before considering it an intentional scroll and blocking the middle click events
