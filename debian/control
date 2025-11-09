@@ -1,0 +1,20 @@
+Source: middle-good-scrolling
+Section: utils
+Priority: optional
+Maintainer: Your Name <your.email@example.com>
+Build-Depends: debhelper-compat (= 13)
+Standards-Version: 4.6.0
+Homepage: https://github.com/makoConstruct/middle-good-scrolling
+
+Package: middle-good-scrolling
+Architecture: all
+Depends: ${misc:Depends},
+         python3,
+         python3-evdev,
+         python3-pyudev,
+         systemd
+Description: Middle mouse button scroll interceptor
+ Hold middle click and drag to scroll. This daemon intercepts middle mouse
+ button events and converts drag movements into smooth scrolling.
+ .
+ The service runs in the background and automatically starts on boot.

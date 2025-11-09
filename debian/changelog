@@ -1,0 +1,9 @@
+middle-good-scrolling (1.0.0-1) unstable; urgency=medium
+
+  * Initial release
+  * Middle mouse button scroll functionality
+  * Configurable scroll speed and behavior
+  * Systemd service integration
+  * Device hot-plug support
+
+ -- Your Name <your.email@example.com>  Sun, 09 Nov 2025 00:00:00 +0000
