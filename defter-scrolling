@@ -12,6 +12,24 @@ from dataclasses import dataclass
 import time
 
 
+def get_button_code(button_name: str) -> int:
+    """Map button names to evdev button codes"""
+    button_map = {
+        'middle': e.BTN_MIDDLE,
+        'back': e.BTN_SIDE,      # Also known as BTN_BACK or mouse button 4
+        'forward': e.BTN_EXTRA,   # Also known as BTN_FORWARD or mouse button 5
+        'left': e.BTN_LEFT,
+        'right': e.BTN_RIGHT,
+    }
+
+    button_name_lower = button_name.lower().strip()
+    if button_name_lower in button_map:
+        return button_map[button_name_lower]
+    else:
+        print(f"Warning: Unknown button name '{button_name}', defaulting to 'middle'")
+        return e.BTN_MIDDLE
+
+
 # ideally most of this would be measured in mms rather than pixels, I haven't looked into it. Generally, computers don't give you accurate mms per pixel. Device manufacturers (and desktop environments) are in a state of sin and don't even try to provide it. So we just use pixels.
 @dataclass
 class Config:
@@ -33,6 +51,10 @@ class Config:
     enable: bool = True
     # the limit on the length of the accumulator vector. The lower it is, the faster the perceived angle will seem to change. If it's too low, input device jitter will cause incorrect scrolling. Needs to be higher than both horizontal_movement_threshold and vertical_movement_threshold.
     accumulator_vector_limit: float = 10.0
+    # The mouse button that activates scrolling
+    # Options: middle, back, forward, left, right
+    # Default: middle
+    activation_button: str = 'middle'
 
 def load_config() -> Config:
     """Load configuration from file or use defaults"""
@@ -59,6 +81,7 @@ def load_config() -> Config:
                     take('vertical_movement_threshold', ps.getfloat)
                     take('accumulator_vector_limit', ps.getfloat)
                     take('enable', ps.getboolean)
+                    take('activation_button', ps.get)
                 print(f"Loaded config from: {path}")
                 break
             except Exception as ex:
@@ -144,6 +167,9 @@ def find_all_mice():
 def handle_mouse(mouse, ui, shared_state, config):
     print(f"Listening to: {mouse.name} ({mouse.path})")
 
+    # Get the configured activation button code
+    activation_button_code = get_button_code(config.activation_button)
+
     # Grab the device to intercept all events
     try:
         mouse.grab()
@@ -153,7 +179,7 @@ def handle_mouse(mouse, ui, shared_state, config):
 
     try:
         for event in mouse.read_loop():
-            if event.type == e.EV_KEY and event.code == e.BTN_MIDDLE:
+            if event.type == e.EV_KEY and event.code == activation_button_code:
                 with shared_state.lock:
                     if event.value == 1:
                         shared_state.middle_pressed = True
@@ -167,10 +193,10 @@ def handle_mouse(mouse, ui, shared_state, config):
                         shared_state.has_started_vertical_scroll = False
                         shared_state.accumulator_vector = (0.0, 0.0)
 
-                        # Send middle click if we didn't scroll enough
+                        # Send button click if we didn't scroll enough
                         if was_pressed and drag_magnitude < config.drag_slop:
-                            ui.write(e.EV_KEY, e.BTN_MIDDLE, 1)
-                            ui.write(e.EV_KEY, e.BTN_MIDDLE, 0)
+                            ui.write(e.EV_KEY, activation_button_code, 1)
+                            ui.write(e.EV_KEY, activation_button_code, 0)
                             ui.syn()
 
             elif event.type == e.EV_REL:
@@ -322,7 +348,7 @@ def monitor_devices(ui, shared_state, config, active_threads, active_threads_loc
 def main():
     # Load configuration
     config = load_config()
-    print(f"Configuration: drag_slop={config.drag_slop}, scroll_speed={config.scroll_speed}, invert_scroll={config.invert_scroll}")
+    print(f"Configuration: activation_button={config.activation_button}, drag_slop={config.drag_slop}, scroll_speed={config.scroll_speed}, invert_scroll={config.invert_scroll}")
     
     if not config.enable:
         print("defter scrolling has 'enabled' set to false in configuration, exiting.")
@@ -381,7 +407,7 @@ def main():
     monitor_thread.daemon = True
     monitor_thread.start()
 
-    print("\n=== Ready! Hold middle click and move mouse ===")
+    print(f"\n=== Ready! Hold {config.activation_button} button and move mouse ===")
     print("=== Monitoring for device changes... ===\n")
 
     try:

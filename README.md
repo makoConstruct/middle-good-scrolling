@@ -1,12 +1,14 @@
 # defter scrolling
 
-A better way of scrolling for the mouse. Makes it so that clicking the middle mouse button down and dragging (anywhere on the page) is like clicking and dragging the scrollbar handle. This has a couple of advantages. Typically, the leverage of the scroll handle varies wildly depending on the length of the page, sometimes a scroll tab will be very small and so any mouse motion will translate to far too much view movement. Our belief is that the leverage of a scroll tab should be consistent, it shouldn't depend on the size of the page. Some few apps (eg, ripcord) adhere to this principle, implementing their own special scrollbar. If every app had made this choice, we wouldn't consider this package to be necessary. Alas.
+A better way of scrolling for the mouse. Makes it so that clicking a mouse button (by default, the middle mouse button) and dragging (anywhere on the page) is like clicking and dragging the scrollbar handle. This has a couple of advantages. Typically, the leverage of the scroll handle varies wildly depending on the length of the page, sometimes a scroll tab will be very small and so any mouse motion will translate to far too much view movement. Our belief is that the leverage of a scroll tab should be consistent, it shouldn't depend on the size of the page. Some few apps (eg, ripcord) adhere to this principle, implementing their own special scrollbar. If every app had made this choice, we wouldn't consider this package to be necessary. Alas.
 
 This package also gives you horizontal scrolling (*and we do a special thing to prevent unintentional horizontal scroll movement from going through, code search "accumulator_vector" if you want the details*), which is a step up from most scroll wheels.
 
-If you need to middle click, just do so without moving the mouse.
+The activation button is configurable - you can use the middle button (default), back button, forward button, or any other mouse button.
 
-If any of your apps need to be able to distinguish the middleclick down event from middleclick up event, this package will break that, it delays middleclick down event until you (without moving/initiating a scroll) release the middle click button (*if we didn't, an unwanted or unmatched middleclick down event would fire every time the user wants to scroll. Not everyone knows this, but if you send a middleclick down event without ever sending an up event it breaks all clicking.*), but apps that care about this distinction are rare, and often they provide other ways of doing whatever they used that for. There's a reason this is rarely a problem; windows long ago standardized another (generally worse) middle click drag behaviour, which we're replacing, so any app compatible with windows will be compatible with this. Some graphics apps use middle click drag to pan, but middle click scroll (what we're providing) is functionally equivalent to that! And many of these apps also bind that functionality to space-drag or some other keyboard input, which is just as good.
+If you need to use the activation button for its normal function (e.g., middle click), just do so without moving the mouse.
+
+If any of your apps need to be able to distinguish the activation button's down event from up event, this package will break that, it delays the button down event until you (without moving/initiating a scroll) release the button (*if we didn't, an unwanted or unmatched button down event would fire every time the user wants to scroll. Not everyone knows this, but if you send a button down event without ever sending an up event it breaks all clicking.*), but apps that care about this distinction are rare, and often they provide other ways of doing whatever they used that for. There's a reason this is rarely a problem; windows long ago standardized another (generally worse) middle click drag behaviour, which we're replacing, so any app compatible with windows will be compatible with this. Some graphics apps use middle click drag to pan, but middle click scroll (what we're providing) is functionally equivalent to that! And many of these apps also bind that functionality to space-drag or some other keyboard input, which is just as good.
 
 ## Install
 
@@ -35,6 +37,11 @@ Config example (this is the default):
 
 ```ini
 [Settings]
+# The mouse button that activates scrolling
+# Options: middle, back, forward, left, right
+# Default: middle
+activation_button = middle
+
 # Scroll speed multiplier
 # Higher values = faster scrolling
 scroll_speed = 30.0
