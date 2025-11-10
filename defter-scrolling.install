@@ -1,18 +1,18 @@
 post_install() {
-    # okay I've capitulated on this. Since arch packages are always installed from the command line, it's no bother to tell the user to run systemctl enable --now middle-good-scrolling.service after installing.
-    echo "ACTION REQUIRED: To complete the installation, run: systemctl enable --now middle-good-scrolling"
+    # okay I've capitulated on this. Since arch packages are always installed from the command line, it's no bother to tell the user to run systemctl enable --now defter-scrolling.service after installing.
+    echo "ACTION REQUIRED: To complete the installation, run: systemctl enable --now defter-scrolling"
     # additionally, there just is no clean way of telling systemd prior to the installation whether to override the automatic activation behavior of the service. You kind of can by putting stuff in /etc/systemd/system-preset/ but it's not clean (it's gross). Idk I just don't like it. I'll think on it.
     # # we're apparently the only arch package that enables a service automatically, which I find baffling. There are so many userspace packages that activate features automatically after being installed, we don't see what makes systemd services any different from the rest of them
-    # systemctl enable --now middle-good-scrolling.service
+    # systemctl enable --now defter-scrolling.service
 }
 
 post_upgrade() {
     # Restart if already running to use the new version
-    if systemctl is-active --quiet middle-good-scrolling.service; then
-        systemctl restart middle-good-scrolling.service
+    if systemctl is-active --quiet defter-scrolling.service; then
+        systemctl restart defter-scrolling.service
     fi
 }
 
 pre_remove() {
-    systemctl disable --now middle-good-scrolling.service 2>/dev/null || true
+    systemctl disable --now defter-scrolling.service 2>/dev/null || true
 }

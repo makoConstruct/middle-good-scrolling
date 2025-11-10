@@ -15,7 +15,6 @@ import time
 # ideally most of this would be measured in mms rather than pixels, I haven't looked into it. Generally, computers don't give you accurate mms per pixel. Device manufacturers (and desktop environments) are in a state of sin and don't even try to provide it. So we just use pixels.
 @dataclass
 class Config:
-    """Configuration settings for middle-click scrolling"""
     # Scroll speed multiplier
     # Higher values = faster scrolling
     scroll_speed: float = 30.0
@@ -39,8 +38,8 @@ def load_config() -> Config:
     """Load configuration from file or use defaults"""
     config = Config()
     config_paths = [
-        '/etc/middle-good-scrolling.conf',
-        os.path.expanduser('~/.config/middle-good-scrolling.conf')
+        '/etc/defter-scrolling.conf',
+        os.path.expanduser('~/.config/defter-scrolling.conf')
     ]
 
     parser = configparser.ConfigParser()
@@ -287,7 +286,7 @@ def monitor_devices(ui, shared_state, config, active_threads, active_threads_loc
                 input_device = evdev.InputDevice(device.device_node)
 
                 # Double-check it's not our virtual device by name
-                if 'middle-click-scroller' in input_device.name:
+                if 'defter-scroller' in input_device.name:
                     continue
 
                 # Check that it has mouse buttons
@@ -329,7 +328,7 @@ def main():
     print(f"Configuration: drag_slop={config.drag_slop}, scroll_speed={config.scroll_speed}, invert_scroll={config.invert_scroll}")
     
     if not config.enable:
-        print("middle good scrolling has 'enabled' set to false in configuration, exiting.")
+        print("defter scrolling has 'enabled' set to false in configuration, exiting.")
         sys.exit(0)
 
     mice = find_all_mice()
@@ -357,7 +356,7 @@ def main():
             e.EV_REL: [e.REL_X, e.REL_Y, e.REL_HWHEEL_HI_RES, e.REL_WHEEL_HI_RES],
         }
 
-    ui = UInput(cap, name='middle-click-scroller')
+    ui = UInput(cap, name='defter-scroller')
     print(f"Created virtual input device: {ui.device.name}")
     virtual_device_path = ui.device.path
     print(f"Virtual device path: {virtual_device_path}")
@@ -385,7 +384,7 @@ def main():
     monitor_thread.daemon = True
     monitor_thread.start()
 
-    print("\n=== Ready! Hold middle-click and move mouse ===")
+    print("\n=== Ready! Hold middle click and move mouse ===")
     print("=== Monitoring for device changes... ===\n")
 
     try:

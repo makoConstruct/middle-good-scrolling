@@ -5,7 +5,7 @@ Documentation=https://github.com/makoConstruct/middle-good-scrolling
 
 [Service]
 Type=simple
-ExecStart=/usr/bin/middle-good-scrolling
+ExecStart=/usr/bin/defter-scrolling
 Restart=on-failure
 RestartSec=5s
 

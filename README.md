@@ -1,4 +1,4 @@
-# middle good scrolling
+# defter scrolling
 
 A better way of scrolling for the mouse. Makes it so that clicking the middle mouse button down and dragging (anywhere on the page) is like clicking and dragging the scrollbar handle. This has two advantages. You're no longer required to find and click the scrollbar, additionally, typically, the leverage of the scroll handle varies wildly depending on the length of the page, sometimes a scroll tab will be very small and so any mouse motion will translate to far too much view movement. Our belief is that the size and leverage of a scroll tab should be consistent, it shouldn't depend on the size of the page. Some apps (eg, ripcord) have acted on this belief and customized their scrollbar behavior appropriately, and if every app had made the right choice there we wouldn't consider this package to be necessary. Alas.
 
@@ -14,9 +14,9 @@ If any of your apps need to be able to distinguish the middleclick down event fr
 
 ```bash
 # install from the aur
-paru -U middle-good-scrolling
+paru -U defter-scrolling
 # enable (activate) the service (this will persist through system restarts)
-systemctl enable --now middle-good-scrolling
+systemctl enable --now defter-scrolling
 ```
 
 ### Other Platforms
@@ -26,8 +26,8 @@ Dunno. Might do a debian/ubuntu version soon. If people like it I think it shoul
 ## Configuration and Management
 
 Configuration files are read in order of precedence:
-1. `~/.config/middle-good-scrolling.conf` (per-user) (it wont be there at first, copy it using `cp /etc/middle-good-scrolling.conf ~/.config/middle-good-scrolling.conf`)
-2. `/etc/middle-good-scrolling.conf` (system-wide)
+1. `~/.config/defter-scrolling.conf` (per-user) (it wont be there at first, copy it using `cp /etc/defter-scrolling.conf ~/.config/defter-scrolling.conf`)
+2. `/etc/defter-scrolling.conf` (system-wide)
 
 Config example (this is the default):
 
@@ -61,5 +61,5 @@ accumulator_vector_limit = 10.0
 
 After changing configuration, restart the service:
 ```bash
-sudo systemctl restart middle-good-scrolling
+sudo systemctl restart defter-scrolling
 ```
