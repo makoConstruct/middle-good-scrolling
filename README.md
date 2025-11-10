@@ -1,20 +1,27 @@
-# fast middle click scrolling
+# middle good scrolling
 
-Hold middle mouse button and drag to scroll, deftly. It's not like that middle click scrolling you may have encountered on windows, for instance, it's more like scrolling is on mobile, but better, because you can (and should, and will by default) amplify the scroll speed so that it moves faster than a 1 to 1 drag gesture would. The default scroll speed is delightfully high. You also get horizontal scrolling. (*and don't worry, we do a special thing to prevent unintentional horizontal scroll movement from going through, see "accumulator_vector"*)
+A better way of scrolling for the mouse. Makes it so that clicking the middle mouse button down and dragging (anywhere on the page) is like clicking and dragging the scrollbar handle. This has two advantages. You're no longer required to find and click the scrollbar, additionally, typically, the leverage of the scroll handle varies wildly depending on the length of the page, sometimes a scroll tab will be very small and so any mouse motion will translate to far too much view movement. Our belief is that the size and leverage of a scroll tab should be consistent, it shouldn't depend on the size of the page. Some apps (eg, ripcord) have acted on this belief and customized their scrollbar behavior appropriately, and if every app had made the right choice there we wouldn't consider this package to be necessary. Alas.
 
-The behavior is a lot like clicking and dragging the scrollbar tab, but it's better than that in several ways. 1: you don't have to locate and mouse over to the mouse tab (just have the mouse somewhere in the page), which saves time because they're often hidden at first and they're a narrow enough target that grabbing them is annoying to do. 2: Scroll tab leverage varies wildly, almost randomly, sometimes a scroll tab will be very small and so any mouse motion will translate to far too much view movement, while at other times it'll be large and your scroll leverage will be disappointingly weak. Our position is that the size and leverage of a scroll tab shouldn't vary depending on the size of the page. Some apps (ripcord) agree with this position and alter their scrollbar behavior appropriately, and for those apps we wouldn't consider middle-good-scrolling to be necessary, but most apps are asleep on this. So most of the time you're gonna prefer *fast middle click scrolling* over the scroll tab.
+This package also gives you horizontal scrolling (*and we do a special thing to prevent unintentional horizontal scroll movement from going through, code search "accumulator_vector" if you want the details*), which is a step up from most scroll wheels.
 
-## Installation
+If you need to middle click, just do so without moving the mouse.
+
+If any of your apps need to be able to distinguish the middleclick down event from middleclick up event, this package will break that, it delays middleclick down event until you (without moving/initiating a scroll) release the middle click button (*if we didn't, an unwanted or unmatched middleclick down event would fire every time the user wants to scroll. Not everyone knows this, but if you send a middleclick down event without ever sending an up event it breaks all clicking.*), but apps that care about this distinction are vanishingly rare, and there's a reason it's rare; windows long ago standardized another (generally less useful) middle click drag behaviour, which we're replacing, so such apps would've also been incompatible with that, so I'm not sure there are any such apps. I vaguely remember using middle click drag to pan in some graphics apps, but middle click scroll (what we're providing) is functionally equivalent to that! And at least some of these apps also bind that functionality to space-drag.
+
+## Install
 
 ### Arch Linux
 
 ```bash
+# install from the aur
 paru -U middle-good-scrolling
+# enable (activate) the service (this will persist through system restarts)
+systemctl enable --now middle-good-scrolling
 ```
 
 ### Other Platforms
 
-Dunno. mako might do a debian/ubuntu version soon. Really though, we think this should be integrated into kde or something, and probably kde wouldn't want it to be a python script (not even we are fully comfortable with it being a python script)
+Dunno. Might do a debian/ubuntu version soon. If people like it I think it should probably be part of KDE or something, which might warrant a port to a language that's not as ridiculous.
 
 ## Configuration and Management
 
