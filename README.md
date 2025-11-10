@@ -4,7 +4,7 @@ A better way of scrolling for the mouse. Makes it so that clicking a mouse butto
 
 This package also gives you horizontal scrolling (*and we do a special thing to prevent unintentional horizontal scroll movement from going through, code search "accumulator_vector" if you want the details*), which is a step up from most scroll wheels.
 
-The activation button is configurable - you can use the middle button (default), back button, forward button, or any other mouse button.
+The activation button is configurable - you can use the middle button (default), back button, forward button, or any other mouse button. You can even specify a comma-separated list of buttons, and it will use the first one your mouse supports (perfect for mixed hardware setups).
 
 If you need to use the activation button for its normal function (e.g., middle click), just do so without moving the mouse.
 
@@ -37,8 +37,13 @@ Config example (this is the default):
 
 ```ini
 [Settings]
-# The mouse button that activates scrolling
+# The mouse button(s) that activate scrolling
+# Can be a single button or comma-separated list (tries each in order)
 # Options: middle, back, forward, left, right
+# Examples:
+#   activation_button = middle          # Use middle button
+#   activation_button = back, middle    # Use back button if available, otherwise middle
+#   activation_button = forward, back   # Use forward if available, otherwise back
 # Default: middle
 activation_button = middle
 

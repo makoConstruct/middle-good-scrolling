@@ -13,7 +13,7 @@ import time
 
 
 def get_button_code(button_name: str) -> int:
-    """Map button names to evdev button codes"""
+    """Map a single button name to evdev button code"""
     button_map = {
         'middle': e.BTN_MIDDLE,
         'back': e.BTN_SIDE,      # Also known as BTN_BACK or mouse button 4
@@ -26,7 +26,54 @@ def get_button_code(button_name: str) -> int:
     if button_name_lower in button_map:
         return button_map[button_name_lower]
     else:
-        raise ValueError(f"Unknown button name '{button_name}'")
+        return None
+
+
+def parse_button_names(button_string: str) -> list[str]:
+    """Parse comma-separated button names from config"""
+    if not button_string:
+        return ['middle']
+
+    # Split by comma and strip whitespace
+    buttons = [b.strip() for b in button_string.split(',')]
+    # Filter out empty strings
+    buttons = [b for b in buttons if b]
+
+    return buttons if buttons else ['middle']
+
+
+def select_activation_button(button_names: list[str], mouse_capabilities: list[int]) -> tuple[int, str]:
+    """
+    Select the first available button from the list that the mouse has.
+    Returns a tuple of (button_code, button_name).
+    Falls back to middle button if none of the requested buttons are available.
+    """
+    # Warn about invalid button names
+    for button_name in button_names:
+        button_code = get_button_code(button_name)
+        if button_code is None:
+            print(f"Warning: Unknown button name '{button_name}', skipping")
+
+    # Select the first valid and available button
+    for button_name in button_names:
+        button_code = get_button_code(button_name)
+        if button_code is not None and button_code in mouse_capabilities:
+            return (button_code, button_name)
+
+    # Fallback: try middle button even if not in the list
+    if e.BTN_MIDDLE in mouse_capabilities:
+        print(f"Warning: None of the requested buttons {button_names} are available, falling back to 'middle'")
+        return (e.BTN_MIDDLE, 'middle')
+
+    # Last resort: use the first available standard mouse button
+    for btn_code, btn_name in [(e.BTN_LEFT, 'left'), (e.BTN_RIGHT, 'right'), (e.BTN_MIDDLE, 'middle')]:
+        if btn_code in mouse_capabilities:
+            print(f"Warning: None of the requested buttons {button_names} are available, falling back to '{btn_name}'")
+            return (btn_code, btn_name)
+
+    # This should never happen, but just in case
+    print(f"Warning: Could not find any suitable button, defaulting to middle")
+    return (e.BTN_MIDDLE, 'middle')
 
 
 # ideally most of this would be measured in mms rather than pixels, I haven't looked into it. Generally, computers don't give you accurate mms per pixel. Device manufacturers (and desktop environments) are in a state of sin and don't even try to provide it. So we just use pixels.
@@ -167,8 +214,14 @@ def find_all_mice():
 def handle_mouse(mouse, ui, shared_state, config):
     print(f"Listening to: {mouse.name} ({mouse.path})")
 
-    # Get the configured activation button code
-    activation_button_code = get_button_code(config.activation_button)
+    # Parse the configured activation buttons (can be comma-separated)
+    button_names = parse_button_names(config.activation_button)
+
+    # Get the mouse's capabilities and select the first available button
+    mouse_capabilities = mouse.capabilities().get(e.EV_KEY, [])
+    activation_button_code, selected_button_name = select_activation_button(button_names, mouse_capabilities)
+
+    print(f"  Using '{selected_button_name}' button for activation on {mouse.name}")
 
     # Grab the device to intercept all events
     try:
@@ -407,7 +460,11 @@ def main():
     monitor_thread.daemon = True
     monitor_thread.start()
 
-    print(f"\n=== Ready! Hold {config.activation_button} button and move mouse ===")
+    button_names = parse_button_names(config.activation_button)
+    if len(button_names) > 1:
+        print(f"\n=== Ready! Configured button priority: {', '.join(button_names)} ===")
+    else:
+        print(f"\n=== Ready! Hold {button_names[0]} button and move mouse ===")
     print("=== Monitoring for device changes... ===\n")
 
     try:
