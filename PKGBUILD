@@ -1,8 +1,8 @@
 # Maintainer: Your Name <your.email@example.com>
 pkgname=defter-scrolling
-pkgver=1.0.0
+pkgver=0.8.0
 pkgrel=1
-pkgdesc="Middle mouse button scroll interceptor - hold middle click and drag to scroll"
+pkgdesc="A better way of using the mouse's middle click button to scroll."
 arch=('any')
 url="https://github.com/makoConstruct/middle-good-scrolling"
 license=('MIT')

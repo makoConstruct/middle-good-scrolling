@@ -48,20 +48,17 @@ def load_config() -> Config:
             try:
                 parser.read(path)
                 if 'Settings' in parser:
-                    if 'drag_slop' in parser['Settings']:
-                        config.drag_slop = parser.getfloat('Settings', 'drag_slop')
-                    if 'scroll_speed' in parser['Settings']:
-                        config.scroll_speed = parser.getfloat('Settings', 'scroll_speed')
-                    if 'invert_scroll' in parser['Settings']:
-                        config.invert_scroll = parser.getboolean('Settings', 'invert_scroll')
-                    if 'horizontal_movement_threshold' in parser['Settings']:
-                        config.horizontal_movement_threshold = parser.getfloat('Settings', 'horizontal_movement_threshold')
-                    if 'vertical_movement_threshold' in parser['Settings']:
-                        config.vertical_movement_threshold = parser.getfloat('Settings', 'vertical_movement_threshold')
-                    if 'accumulator_vector_limit' in parser['Settings']:
-                        config.accumulator_vector_limit = parser.getfloat('Settings', 'accumulator_vector_limit')
-                    if 'enable' in parser['Settings']:
-                        config.enable = parser.getboolean('Settings', 'enable')
+                    ps = parser['Settings']
+                    def take(key: str, parse_func):
+                        if key in ps:
+                            setattr(config, key, parse_func(key))
+                    take('drag_slop', ps.getfloat)
+                    take('scroll_speed', ps.getfloat)
+                    take('invert_scroll', ps.getboolean)
+                    take('horizontal_movement_threshold', ps.getfloat)
+                    take('vertical_movement_threshold', ps.getfloat)
+                    take('accumulator_vector_limit', ps.getfloat)
+                    take('enable', ps.getboolean)
                 print(f"Loaded config from: {path}")
                 break
             except Exception as ex:
