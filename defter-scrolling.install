@@ -7,6 +7,8 @@ post_upgrade() {
     # Restart if already running to use the new version
     if systemctl is-active --quiet defter-scrolling.service; then
         systemctl restart defter-scrolling.service
+    else
+        echo "WARNING: defter-scrolling is not running, run: systemctl enable --now defter-scrolling"
     fi
 }
 
