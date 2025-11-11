@@ -1,6 +1,8 @@
 # defter scrolling
 
-A better way of scrolling for your mouse: Makes it so that clicking your chosen mouse button and dragging (anywhere on the page) is like clicking and dragging the scrollbar handle (but better in various ways, see below). Many desktop environments offer functionality like this with middle click, but we allow (and recommend, and, by default, will be, if possible) binding it to a more comfortable button like the forward button, if you have one. Our implementation is also just more carefully tuned (feels less sticky, or rigid) and we're generally easier to configure than libinput stuff (*last we checked (late 2025) configuring libinput's middle click scroll behavior is currently difficult or impossible on wayland-kde*)
+=======
+A better way of scrolling, for mice. Makes it so that clicking your chosen mouse button and dragging (anywhere on the page) is like clicking and dragging the scrollbar handle (but better in various ways, see below). Many desktop environments offer functionality like this with middle click, but we allow (and recommend, and, by default, will be, if possible) binding it to a more comfortable button like the forward button, if you have one. Our implementation is also just more carefully tuned than libinput's (ours feels less sticky, or rigid) and we're generally easier to configure than libinput stuff (*last we checked (late 2025) configuring libinput's middle click scroll behavior is currently difficult or impossible on wayland-kde*)
+>>>>>>> 2152b62 (refinements, corrected srcinfo)
 
 We also give you horizontal scrolling (*and we have a special technique to prevent unintentional horizontal scroll movement from going through without preventing you from engaging in intentional biaxial movement, code search "accumulator_vector" if you want the details*).
 
@@ -10,7 +12,7 @@ We also give you horizontal scrolling (*and we have a special technique to preve
 
 - Mouse wheel: Most are not very good, only scroll in small increments. If you have a rare good mouse wheel, see below.
 
-### Other ways of scrolling that *defter scrolling* isn't necessarily better than:
+### other ways of scrolling that *defter scrolling* isn't necessarily better than:
 
 - Trackpad two-finger scroll: If you have one of these you don't need defter scrolling imo.
 
@@ -33,7 +35,7 @@ systemctl enable --now defter-scrolling
 
 Dunno. Might do a debian/ubuntu version soon.
 
-I'd like to get this implementation into libinput, if you could help with that it would be greatly appreciated.
+It would be nice to get these refinements adopted with libinput, if someone could help with that, it would be appreciated.
 
 ## Configuration and Management
 

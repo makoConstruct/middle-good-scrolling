@@ -2,7 +2,7 @@
 pkgname=defter-scrolling
 pkgver=0.8.0
 pkgrel=1
-pkgdesc="A better way of using the mouse's middle click button to scroll."
+pkgdesc="A better way of scrolling, for mice"
 arch=('any')
 url="https://github.com/makoConstruct/middle-good-scrolling"
 license=('MIT')
