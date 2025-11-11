@@ -1,11 +1,11 @@
-# Maintainer: Your Name <your.email@example.com>
+# Maintainer: mako yass <m.arcus.yass@gmail.com>
 pkgname=defter-scrolling
 pkgver=0.8.0
 pkgrel=1
 pkgdesc="A better way of scrolling, for mice"
 arch=('any')
 url="https://github.com/makoConstruct/middle-good-scrolling"
-license=('MIT')
+license=('0BSD')
 depends=('python' 'python-evdev' 'python-pyudev')
 backup=('etc/defter-scrolling.conf')
 install="${pkgname}.install"
