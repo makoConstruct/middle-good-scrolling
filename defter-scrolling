@@ -122,6 +122,7 @@ class State:
     # Shared state for mouse event handling across threads
     button_pressed: bool = False
     accumulator_vector: tuple[float, float] = (0.0, 0.0)
+    drag_total: float = 0.0
     has_started_horizontal_scroll: bool = False
     has_started_vertical_scroll: bool = False
     lock: threading.Lock = None  # Thread lock for safe access
@@ -209,23 +210,21 @@ def handle_mouse(mouse, ui, shared_state: State, config: Config):
                         shared_state.button_pressed = True
                         # Don't forward the press event, only send the click when we know we're not scrolling (on release)
                     elif event.value == 0:
-                        was_pressed = shared_state.button_pressed
-                        drag_magnitude = magnitude(shared_state.accumulator_vector)
+                        # Send button click if we didn't scroll enough
+                        if shared_state.button_pressed and shared_state.drag_total < config.drag_slop:
+                            ui.write(e.EV_KEY, activation_button_code, 1)
+                            ui.write(e.EV_KEY, activation_button_code, 0)
+                            ui.syn()
                         shared_state.button_pressed = False
                         shared_state.has_started_horizontal_scroll = False
                         shared_state.has_started_vertical_scroll = False
                         shared_state.accumulator_vector = (0.0, 0.0)
-
-                        # Send button click if we didn't scroll enough
-                        if was_pressed and drag_magnitude < config.drag_slop:
-                            ui.write(e.EV_KEY, activation_button_code, 1)
-                            ui.write(e.EV_KEY, activation_button_code, 0)
-                            ui.syn()
+                        shared_state.drag_total = 0.0
 
             elif event.type == e.EV_REL:
                 with shared_state.lock:
                     if shared_state.button_pressed:
-                        # Convert mouse movement to scroll events
+                        shared_state.drag_total += abs(event.value)
                         # I don't know why but it seems like we have to invert the vertical scroll direction but not the horizontal. Maybe mouse and X11 coordinates are vertically flipped?
                         if event.code == e.REL_X:
                             # decide whether to unlock horizontal scroll on this event, or if it already is, be free
