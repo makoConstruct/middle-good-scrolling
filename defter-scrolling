@@ -12,9 +12,48 @@ from dataclasses import dataclass
 import time
 
 
+button_name_to_code_map = {
+    'middle': e.BTN_MIDDLE,
+    'back': e.BTN_SIDE,
+    'forward': e.BTN_EXTRA,
+    'left': e.BTN_LEFT,
+    'right': e.BTN_RIGHT,
+}
+button_code_to_name_map = {v: k for k, v in button_name_to_code_map.items()}
+def get_button_code(button_name: str) -> int | None:
+    button_name_lower = button_name.lower().strip()
+    if button_name_lower in button_name_to_code_map:
+        return button_name_to_code_map[button_name_lower]
+    else:
+        return e.ecodes.get(button_name_lower)
+
+def get_button_name(button_code: int) -> str | None:
+    if button_code in button_code_to_name_map:
+        return button_code_to_name_map[button_code]
+    else:
+        return e.BTN.get(button_code, None)
+
+def select_first_present_activation_button(button_codes: list[int], mouse_capabilities: list[int]) -> int | None:
+    # Warn about invalid button names
+    for button_code in button_codes:
+        if button_code is None:
+            print(f"Warning: Unknown button code '{get_button_name(button_code) or button_code}', skipping")
+    
+    for code in button_codes:
+        if code in mouse_capabilities:
+            return code
+
+    print(f"Warning: The mouse had none of the buttons that were assigned by the config, the functionality will be inactive.")
+    return None
+
+
 # ideally most of this would be measured in mms rather than pixels, I haven't looked into it. Generally, computers don't give you accurate mms per pixel. Device manufacturers (and desktop environments) are in a state of sin and don't even try to provide it. So we just use pixels.
 @dataclass
 class Config:
+    # The mouse buttons that can activate scrolling. Only the first one that is present on the mouse will be used, the rest are fallbacks.
+    # We recommend setting this to 'forward' if you have it (It's usually more comfortable to click, and it's used less often, and apps never use it for drag actions), but not everyone has it, so it defaults to middle after that, and if you don't have middle, it'll default to right click.
+    # Options: middle, back_proper, back (which is officially called BTN_SIDE), forward_proper, forward (which is officially called BTN_EXTRA), left, right, You can also use any of the standard linux/input.h button codes.
+    activation_buttons: tuple[int, ...] = (e.BTN_FORWARD, e.BTN_EXTRA, e.BTN_SIDE, e.BTN_MIDDLE, e.BTN_RIGHT)
     # Scroll speed multiplier
     # Higher values = faster scrolling
     scroll_speed: float = 30.0
@@ -35,7 +74,6 @@ class Config:
     accumulator_vector_limit: float = 10.0
 
 def load_config() -> Config:
-    """Load configuration from file or use defaults"""
     config = Config()
     config_paths = [
         '/etc/defter-scrolling.conf',
@@ -59,6 +97,16 @@ def load_config() -> Config:
                     take('vertical_movement_threshold', ps.getfloat)
                     take('accumulator_vector_limit', ps.getfloat)
                     take('enable', ps.getboolean)
+                    button_string = ps.get('activation_buttons')
+                    if button_string:
+                        button_codes = []
+                        for b in button_string.split(','):
+                            button_code = get_button_code(b.strip())
+                            if button_code is not None:
+                                button_codes.append(button_code)
+                            else:
+                                print(f"Warning: Unknown button name '{b.strip()}', skipping")
+                        config.activation_buttons = tuple(button_codes)
                 print(f"Loaded config from: {path}")
                 break
             except Exception as ex:
@@ -71,8 +119,8 @@ def load_config() -> Config:
 
 @dataclass
 class State:
-    """Shared state for mouse event handling across threads"""
-    middle_pressed: bool = False
+    # Shared state for mouse event handling across threads
+    button_pressed: bool = False
     accumulator_vector: tuple[float, float] = (0.0, 0.0)
     has_started_horizontal_scroll: bool = False
     has_started_vertical_scroll: bool = False
@@ -104,7 +152,6 @@ def scroll_speed_for(distance_traveled: float, config: Config) -> int:
     return int(round(config.scroll_speed * distance_traveled * (-1 if config.invert_scroll else 1)))
 
 def find_all_mice():
-    """Find all mouse devices using udev for proper device classification"""
     context = pyudev.Context()
     mice = []
 
@@ -132,7 +179,7 @@ def find_all_mice():
                 input_device = evdev.InputDevice(device.device_node)
                 # Double-check that it has mouse buttons
                 caps = input_device.capabilities().get(e.EV_KEY, [])
-                if any(btn in caps for btn in [e.BTN_LEFT, e.BTN_RIGHT, e.BTN_MIDDLE]):
+                if any(btn in caps for btn in [e.BTN_LEFT, e.BTN_RIGHT]):
                     mice.append(input_device)
                     print(f"Found mouse: {input_device.name} ({input_device.path})")
             except (OSError, PermissionError) as ex:
@@ -141,8 +188,11 @@ def find_all_mice():
 
     return mice
 
-def handle_mouse(mouse, ui, shared_state, config):
+def handle_mouse(mouse, ui, shared_state: State, config: Config):
     print(f"Listening to: {mouse.name} ({mouse.path})")
+    # Get the mouse's capabilities and select the first available button
+    mouse_capabilities = mouse.capabilities().get(e.EV_KEY, [])
+    activation_button_code = select_first_present_activation_button(config.activation_buttons, mouse_capabilities)
 
     # Grab the device to intercept all events
     try:
@@ -153,29 +203,28 @@ def handle_mouse(mouse, ui, shared_state, config):
 
     try:
         for event in mouse.read_loop():
-            if event.type == e.EV_KEY and event.code == e.BTN_MIDDLE:
+            if event.type == e.EV_KEY and event.code == activation_button_code:
                 with shared_state.lock:
                     if event.value == 1:
-                        shared_state.middle_pressed = True
-                        # Don't forward the press event, only send a middle click when we know we're not scrolling (on release)
+                        shared_state.button_pressed = True
+                        # Don't forward the press event, only send the click when we know we're not scrolling (on release)
                     elif event.value == 0:
-                        was_pressed = shared_state.middle_pressed
+                        was_pressed = shared_state.button_pressed
                         drag_magnitude = magnitude(shared_state.accumulator_vector)
-                        has_scrolled = shared_state.has_started_horizontal_scroll or shared_state.has_started_vertical_scroll
-                        shared_state.middle_pressed = False
+                        shared_state.button_pressed = False
                         shared_state.has_started_horizontal_scroll = False
                         shared_state.has_started_vertical_scroll = False
                         shared_state.accumulator_vector = (0.0, 0.0)
 
-                        # Send middle click if we didn't scroll enough
+                        # Send button click if we didn't scroll enough
                         if was_pressed and drag_magnitude < config.drag_slop:
-                            ui.write(e.EV_KEY, e.BTN_MIDDLE, 1)
-                            ui.write(e.EV_KEY, e.BTN_MIDDLE, 0)
+                            ui.write(e.EV_KEY, activation_button_code, 1)
+                            ui.write(e.EV_KEY, activation_button_code, 0)
                             ui.syn()
 
             elif event.type == e.EV_REL:
                 with shared_state.lock:
-                    if shared_state.middle_pressed:
+                    if shared_state.button_pressed:
                         # Convert mouse movement to scroll events
                         # I don't know why but it seems like we have to invert the vertical scroll direction but not the horizontal. Maybe mouse and X11 coordinates are vertically flipped?
                         if event.code == e.REL_X:
@@ -243,7 +292,7 @@ def handle_mouse(mouse, ui, shared_state, config):
         except:
             pass  # Device might already be gone
 
-def monitor_devices(ui, shared_state, config, active_threads, active_threads_lock, stop_event, virtual_device_path):
+def monitor_devices(ui, shared_state:State, config:Config, active_threads, active_threads_lock, stop_event, virtual_device_path):
     """Monitor for device connection/disconnection events"""
     print("Starting device monitor...")
     context = pyudev.Context()
@@ -288,7 +337,7 @@ def monitor_devices(ui, shared_state, config, active_threads, active_threads_loc
 
                 # Check that it has mouse buttons
                 caps = input_device.capabilities().get(e.EV_KEY, [])
-                if any(btn in caps for btn in [e.BTN_LEFT, e.BTN_RIGHT, e.BTN_MIDDLE]):
+                if any(btn in caps for btn in [e.BTN_LEFT, e.BTN_RIGHT]):
                     # Double-check it's not already being handled (race condition check)
                     with active_threads_lock:
                         if input_device.path in active_threads:
@@ -322,7 +371,6 @@ def monitor_devices(ui, shared_state, config, active_threads, active_threads_loc
 def main():
     # Load configuration
     config = load_config()
-    print(f"Configuration: drag_slop={config.drag_slop}, scroll_speed={config.scroll_speed}, invert_scroll={config.invert_scroll}")
     
     if not config.enable:
         print("defter scrolling has 'enabled' set to false in configuration, exiting.")
@@ -381,7 +429,14 @@ def main():
     monitor_thread.daemon = True
     monitor_thread.start()
 
-    print("\n=== Ready! Hold middle click and move mouse ===")
+    button_names = [get_button_name(code) for code in config.activation_buttons]
+    if len(button_names) == 0:
+        print(f"Warning: No activation buttons found, the functionality will be inactive.")
+    elif len(button_names) > 1:
+        print(button_names)
+        print(f"\n=== Ready! Configured button priority: {', '.join(button_names)} ===")
+    else:
+        print(f"\n=== Ready! Hold {button_names[0]} button and move mouse ===")
     print("=== Monitoring for device changes... ===\n")
 
     try:
