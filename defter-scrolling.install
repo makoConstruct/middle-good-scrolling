@@ -2,6 +2,7 @@ post_install() {
     echo ""
     echo "ACTION REQUIRED:"
     echo "   To complete the installation, run: systemctl enable --now defter-scrolling"
+    echo "If you want to configure it: cp /etc/defter-scrolling.conf ~/.config/defter-scrolling.conf"
     echo ""
 }
 
