@@ -24,7 +24,7 @@ Generally, defter scrolling wont interfere with other uses of the assigned butto
 
 ```bash
 # install from the aur
-paru -U defter-scrolling
+paru -S defter-scrolling
 # enable (activate) the service (this will persist through system restarts)
 systemctl enable --now defter-scrolling
 ```
