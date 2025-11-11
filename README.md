@@ -1,14 +1,22 @@
 # defter scrolling
 
-A better way of scrolling for the mouse. Makes it so that clicking a mouse button (by default, the middle mouse button) and dragging (anywhere on the page) is like clicking and dragging the scrollbar handle. This has a couple of advantages. Typically, the leverage of the scroll handle varies wildly depending on the length of the page, sometimes a scroll tab will be very small and so any mouse motion will translate to far too much view movement. Our belief is that the leverage of a scroll tab should be consistent, it shouldn't depend on the size of the page. Some few apps (eg, ripcord) adhere to this principle, implementing their own special scrollbar. If every app had made this choice, we wouldn't consider this package to be necessary. Alas.
+A better way of scrolling for your mouse: Makes it so that clicking your chosen mouse button and dragging (anywhere on the page) is like clicking and dragging the scrollbar handle (but better in various ways, see below). Many desktop environments offer functionality like this with middle click, but we allow (and recommend, and, by default, will be, if possible) binding it to a more comfortable button like the forward button, if you have one. Our implementation is also just more carefully tuned (feels less sticky, or rigid) and we're generally easier to configure than libinput stuff (*last we checked (late 2025) configuring libinput's middle click scroll behavior is currently difficult or impossible on wayland-kde*)
 
-This package also gives you horizontal scrolling (*and we do a special thing to prevent unintentional horizontal scroll movement from going through, code search "accumulator_vector" if you want the details*), which is a step up from most scroll wheels.
+We also give you horizontal scrolling (*and we have a special technique to prevent unintentional horizontal scroll movement from going through without preventing you from engaging in intentional biaxial movement, code search "accumulator_vector" if you want the details*).
 
-The activation button is configurable - you can use the middle button (default), back button, forward button, or any other mouse button. You can even specify a comma-separated list of buttons, and it will use the first one your mouse supports (perfect for mixed hardware setups).
+### conventional ways of scrolling that *defter scrolling* is definitely better than:
 
-If you need to use the activation button for its normal function (e.g., middle click), just do so without moving the mouse.
+- Grabbing and dragging the scroll handle: Usually, the handle movement to page movement ratio of the average scrollbar varies wildly depending on the length of the page, sometimes a scroll tab will be a little sliver and so any mouse motion will produce far too much page movement, leading to unpredictable and uncontrollable scrolling. It's not like that with this.
 
-If any of your apps need to be able to distinguish the activation button's down event from up event, this package will break that, it delays the button down event until you (without moving/initiating a scroll) release the button (*if we didn't, an unwanted or unmatched button down event would fire every time the user wants to scroll. Not everyone knows this, but if you send a button down event without ever sending an up event it breaks all clicking.*), but apps that care about this distinction are rare, and often they provide other ways of doing whatever they used that for. There's a reason this is rarely a problem; windows long ago standardized another (generally worse) middle click drag behaviour, which we're replacing, so any app compatible with windows will be compatible with this. Some graphics apps use middle click drag to pan, but middle click scroll (what we're providing) is functionally equivalent to that! And many of these apps also bind that functionality to space-drag or some other keyboard input, which is just as good.
+- Mouse wheel: Most are not very good, only scroll in small increments. If you have a rare good mouse wheel, see below.
+
+### Other ways of scrolling that *defter scrolling* isn't necessarily better than:
+
+- Trackpad two-finger scroll: If you have one of these you don't need defter scrolling imo.
+
+- *Analog* mouse wheels: Unsure, I'd say these are only slightly worse than defter scrolling. There are some analog mouse wheels that can spin freely with low friction, those are okay. They don't support horizontal scrolling, and flicking the wheel with your finger isn't really as ergonomic or controllable as just moving the mouse normally, so I still think they're worse on net.
+
+Generally, defter scrolling wont interfere with other uses of the assigned button, since we only absorb the activation button click if you begin a drag. This will interfere with apps that use drags with that button, but such cases are very rare, and even in these cases (*eg, some graphics apps use middle-click scroll to pan the page*) apps generally provide alternative ways of doing those things (*letting you pan by pressing space instead, which I've always thought was really nice*).
 
 ## Install
 
@@ -25,7 +33,7 @@ systemctl enable --now defter-scrolling
 
 Dunno. Might do a debian/ubuntu version soon.
 
-If people like it I think it should probably be part of KDE or something. - oh... Embarrassingly, only after making this did I realize KDE/libinput already basically has middle click scroll. Regardless, our implementation is way nicer, as things currently stand. Libinput has horrible defaults (very high initial friction, low scroll speed), gets stuck going either horizontal or vertical and can't do both at once (we have a more intelligent approach to this), if any of this is changeable, I have no idea where the configuration files are, and according to libinput, on wayland, there might not even be a configuration file for this stuff, it has to be exposed by the desktop environment, and KDE's graphics settings dialog certainly doesn't expose them currently, and if they're exposed in the settings, I again have no idea where they are.
+I'd like to get this implementation into libinput, if you could help with that it would be greatly appreciated.
 
 ## Configuration and Management
 
@@ -37,15 +45,10 @@ Config example (this is the default):
 
 ```ini
 [Settings]
-# The mouse button(s) that activate scrolling
-# Can be a single button or comma-separated list (tries each in order)
-# Options: middle, back, forward, left, right
-# Examples:
-#   activation_button = middle          # Use middle button
-#   activation_button = back, middle    # Use back button if available, otherwise middle
-#   activation_button = forward, back   # Use forward if available, otherwise back
-# Default: middle
-activation_button = middle
+# The mouse buttons that can activate scrolling. Only the first one that is present on the mouse will be used, the rest are fallbacks.
+# We recommend setting this to 'forward' if you have it (this is the default) (forward is usually more comfortable to click, and it's used less often, and apps never use it for drag actions), but not everyone has it, so the default setting will fall back to 'back' after that, and if you don't have that, 'middle', and if you don't have middle, it'll default to 'right'.
+# Options: middle, back_proper, back (which is officially called BTN_SIDE), forward_proper, forward (which is officially called BTN_EXTRA), left, right, You can also use any of the standard linux/input.h button codes.
+activation_buttons = BTN_FORWARD, forward, back, middle, right
 
 # Scroll speed multiplier
 # Higher values = faster scrolling
