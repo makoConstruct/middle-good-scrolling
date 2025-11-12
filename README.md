@@ -1,22 +1,14 @@
 # defter scrolling
 
-A better way of scrolling, for mice. Makes it so that clicking your chosen mouse button and dragging (anywhere on the page) is like clicking and dragging the scrollbar handle (but better in various ways, see below). Many desktop environments offer functionality like this with middle click, but we allow (and recommend, and, by default, will be, if possible) binding it to a more comfortable button like the forward button, if you have one. Our implementation is also just more carefully tuned than libinput's (*ours feels less sticky, or rigid, honestly the libinput defaults are miserable to use imo*) and we're generally easier to configure than libinput stuff (*last we checked (late 2025) configuring libinput's middle click scroll behavior is currently difficult or impossible on wayland-kde*)
+A better way of scrolling, for mice.
 
-This also gives you horizontal scrolling (*and we have a special technique to prevent unintentional horizontal scroll movement from going through without preventing you from engaging in intentional biaxial movement, code search "accumulator_vector" if you want the details*).
+Makes it so that clicking your chosen mouse button and dragging (anywhere on the page) is like clicking and dragging the scrollbar handle (but better in various ways, see below).
 
-### conventional ways of scrolling that *defter scrolling* is definitely better than:
+Many desktop environments offer functionality like this with middle click, but we allow (and recommend, and, by default, will be, if possible) binding it to a more comfortable button like the forward button, if you have one. Our implementation is also just more carefully tuned than libinput's is (*ours feels less sticky, or rigid, honestly the libinput defaults are miserable to use imo*) and we're generally easier to configure than libinput stuff (*last we checked (late 2025) configuring libinput's middle click scroll behavior is currently difficult or impossible on wayland-kde*)
 
-- Grabbing and dragging the scroll handle: Usually, the handle movement to page movement ratio of the average scrollbar varies wildly depending on the length of the page, sometimes a scroll tab will be a little sliver and so any mouse motion will produce far too much page movement, leading to unpredictable and uncontrollable scrolling. It's not like that with this.
+(We also give you horizontal scrolling (*and we have a special technique to prevent unintentional horizontal scroll movement from going through without preventing you from engaging in intentional biaxial movement, code search "accumulator_vector" if you want the details*))
 
-- Mouse wheel: Most are not very good, only scroll in small increments. If you have a rare good mouse wheel, see below.
-
-### other ways of scrolling that *defter scrolling* isn't necessarily better than:
-
-- Trackpad two-finger scroll: If you have one of these you don't need defter scrolling imo.
-
-- *Analog* mouse wheels: Unsure, I'd say these are only slightly below defter scrolling. There are some analog mouse wheels that can spin freely with low friction, those are nice. They don't support horizontal scrolling, and flicking the wheel with your finger isn't really as ergonomic or controllable as just moving the mouse normally, so I still think they're not as good, on net. (*an aside: Low friction analog mouse wheels are notable for being the only scrolling modality other than defter scrolling that supports dragging and dropping things over very long distances. Although a user should never be required to do this, unfortunately in many apps (usually when sorting long priority lists) it is sometimes needed.*)
-
-Generally, defter scrolling wont interfere with other uses of the assigned button, since we only absorb the activation button click if you begin a drag. This will interfere with apps that use drags with that button, but such cases are very rare, and even in these cases (*eg, some graphics apps use middle-click scroll to pan the page*) apps generally provide alternative ways of doing those things (*letting you pan by pressing space instead, which I've always thought was really nice*).
+Generally, defter scrolling wont interfere with other uses of the assigned button, since we only absorb the activation button click if you begin a drag. This will interfere with apps that use drags with that button, but such cases are very rare, and even in these cases (*eg, some graphics apps use middle-click scroll to pan the page*) apps generally provide alternative ways of doing those things (*eg, letting you pan by pressing space instead, which I've always thought was just as good.*).
 
 ## Install
 
@@ -80,3 +72,23 @@ After changing configuration, restart the service:
 ```bash
 sudo systemctl restart defter-scrolling
 ```
+
+## Design commentary
+
+The standard behaviors of scollbars are bad. The leverage by which movement of the scrollbar handle translates into movement of the page varies wildly depending on the length of the page, sometimes a scroll tab will be a little sliver and so any mouse motion will produce far too much page movement, leading to unpredictable and uncontrollable scrolling. The position of the scrollbar handle wont be where you expect, and it'll often be quite narrow. There have been apps that recognized this and hacked up their scrollbar and made it sane, but they're rare. The only one that comes to mind for me is [ripcord](https://cancel.fm/ripcord/), an old discord client (*I would recommend it except for the fact that it seems like discord deletes people for using it, it even though they've never come out and explained why they were deleting people, and even though using it was never a ToS violation*) built in Qt. The scrollbar was all handle, and dragging it would always move the page with consistent leverage. If all scrollbars were like this, we wouldn't really need *defter scrolling*. Alas. Most frontend devs are not thoughtful about these things, and most designers are really more like marketers than a designer should be, and interaction designers specifically are rarely in the picture. But it doesn't matter so much, since defter scrolling is better than any scrollbar, since it spares you from having to move the mouse to the scrollbar whenever you want to scroll, it works anywhere on the page.
+
+Mouse wheels? Well, clicky mouse wheels are not great for scrolling. They either move only in small increments (too slow for searching or skimreading), or in large increments (too little control, too jerky). There are analog mouse wheels, and those are very good, if all mouse wheels were like that, again, I might not have felt a need to make *defter scrolling*. Alas. But again, it's not so bad, *defter scrolling* is even better than analog mouse wheels, as it also supports horizontal scrolling, and it's a bit more comfortable and controllable to use ordinary mouse movement to scroll than it is to flick a wheel with your finger.
+
+Touchpads, or mice with touch surfaces? Well, those are great. I think Mac users wont have much of an apetite for *defter scrolling*. I still think *defter scrolling* is a *little bit* better than those devices, but it is better by so little that it's not worth dwelling on.
+
+### On dragging and dropping
+
+Some analog mouse wheels also allow low friction free-wheeling, which is very nice. And those are the only scrolling modality aside from *defter scrolling* that has this unique quality of supporting the dragging and dropping things over very long distances.
+
+As far as I'm aware, mac touch surfaces don't support dragging and dropping items over long distances.
+
+Though I think a user should never really *need* to drag and drop things over long distances. Cutting and pasting (*or stowing and popping, or whatever, some other way of moving items*) would always be better, if supported, and where it's not supported, that's an obvious enough shortcoming that any project should be open to fixing it.
+
+It's just kinda nice to have. Sometimes the user will initiate a drag without knowing where they're going to place the item down, they may not know before moving the item whether they should make it a drag or a copypaste.
+
+It's worth noting... I think mac trackpad hardware *could* support this. How I'd do it is, if the user clicks down on an item, then introduces another finger and moves it while keeping the original finger still, the movement of the second finger would move the item. This could conceivably interfere with some two finger scroll gestures and so apple has probably forbidden it. Mac users, please tell me whether this is the case.
