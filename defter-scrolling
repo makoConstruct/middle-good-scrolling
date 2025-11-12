@@ -229,38 +229,30 @@ def handle_mouse(mouse, ui, shared_state: State, config: Config):
                         if event.code == e.REL_X:
                             # decide whether to unlock horizontal scroll on this event, or if it already is, be free
                             shared_state.accumulator_vector = limited_vector_add(shared_state.accumulator_vector, (event.value, 0.0), config.accumulator_vector_limit)
-                            moving_by = 0
-                            if (
-                                not shared_state.has_started_horizontal_scroll and
+                            def move_by(d: float):
+                                ui.write(e.EV_REL, e.REL_HWHEEL_HI_RES, scroll_speed_for(d, config))
+                                ui.syn()
+                            if shared_state.has_started_horizontal_scroll:
+                                move_by(event.value)
+                            elif (
                                 magnitude(shared_state.accumulator_vector) > config.horizontal_movement_threshold and
                                 is_more_horizontal_than_vertical(shared_state.accumulator_vector)
                             ):
+                                move_by(shared_state.accumulator_vector[0])
                                 shared_state.has_started_horizontal_scroll = True
-                                moving_by = shared_state.accumulator_vector[0]
-                            else:
-                                if shared_state.has_started_horizontal_scroll:
-                                    moving_by = event.value
-                                else:
-                                    moving_by = 0
-                            ui.write(e.EV_REL, e.REL_HWHEEL_HI_RES, scroll_speed_for(moving_by, config))
-                            ui.syn()
                         elif event.code == e.REL_Y:
                             shared_state.accumulator_vector = limited_vector_add(shared_state.accumulator_vector, (0.0, event.value), config.accumulator_vector_limit)
-                            moving_by = 0
-                            if (
-                                not shared_state.has_started_vertical_scroll and
+                            def move_by(d: float):
+                                ui.write(e.EV_REL, e.REL_WHEEL_HI_RES, -scroll_speed_for(d, config))
+                                ui.syn()
+                            if shared_state.has_started_vertical_scroll:
+                                move_by(event.value)
+                            elif (
                                 magnitude(shared_state.accumulator_vector) > config.vertical_movement_threshold and
                                 is_more_vertical_than_horizontal(shared_state.accumulator_vector)
                             ):
-                                moving_by = shared_state.accumulator_vector[1]
+                                move_by(shared_state.accumulator_vector[1])
                                 shared_state.has_started_vertical_scroll = True
-                            else:
-                                if shared_state.has_started_vertical_scroll:
-                                    moving_by = event.value
-                                else:
-                                    moving_by = 0
-                            ui.write(e.EV_REL, e.REL_WHEEL_HI_RES, -scroll_speed_for(moving_by, config))
-                            ui.syn()
                         else:
                             # Forward other relative events unchanged
                             ui.write(event.type, event.code, event.value)
