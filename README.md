@@ -23,9 +23,33 @@ paru -S defter-scrolling
 systemctl enable --now defter-scrolling
 ```
 
-### Other Platforms
+### Other Linux Distributions (Ubuntu, Debian, Fedora, etc.)
 
-Dunno. Might do a debian/ubuntu version soon.
+1. (*dependencies*)
+   ```bash
+   # Ubuntu/Debian
+   sudo apt install python3 python3-evdev python3-pyudev
+   # Fedora
+   sudo dnf install python3 python3-evdev python3-pyudev
+   # or with Pip
+   pip install --user evdev pyudev
+   ```
+
+2.
+   ```bash
+   git clone https://github.com/makoConstruct/middle-good-scrolling.git
+   cd middle-good-scrolling
+   ./install.sh
+   ```
+
+The install script will automatically enable and start the service.
+
+**To uninstall:**
+```bash
+./uninstall.sh
+```
+
+### Other Platforms
 
 It would be nice to get these refinements adopted with libinput, if someone could help with that, it would be appreciated.
 
