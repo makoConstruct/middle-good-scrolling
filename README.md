@@ -23,7 +23,31 @@ paru -S defter-scrolling
 systemctl enable --now defter-scrolling
 ```
 
-### Other Linux Distributions (Ubuntu, Debian, Fedora, etc.)
+### Debian/Ubuntu (via .deb package)
+
+If you want to build and install a proper Debian package:
+
+```bash
+# Install build dependencies
+sudo apt install debhelper devscripts build-essential
+
+# Clone and build
+git clone https://github.com/makoConstruct/middle-good-scrolling.git
+cd middle-good-scrolling
+dpkg-buildpackage -b -us -uc
+
+# Install the package
+sudo dpkg -i ../defter-scrolling_0.8.0-1_all.deb
+```
+
+See [DEBIAN_BUILD.md](DEBIAN_BUILD.md) for detailed build instructions.
+
+**To uninstall:**
+```bash
+sudo apt remove defter-scrolling
+```
+
+### Other Linux Distributions (Generic install script)
 
 Get dependencies if needed:
 ```bash

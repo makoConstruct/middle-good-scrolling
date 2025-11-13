@@ -4,6 +4,8 @@ src/
 *.tar.gz
 *.tar.xz
 *.pkg.tar.zst
+*.deb
+build-deb/
 
 # Python
 __pycache__/

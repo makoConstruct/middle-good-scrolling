@@ -1,0 +1,10 @@
+defter-scrolling (0.8.0-1) unstable; urgency=medium
+
+  * Initial Debian package release
+  * Add generic Linux install and uninstall scripts
+  * Auto-enable and start service in install script
+  * Improved scrolling algorithm based on tractrix curves
+  * Support for horizontal/biaxial scrolling
+  * Configurable activation buttons with fallback support
+
+ -- makoConstruct <m.arcus.yass@gmail.com>  Thu, 13 Nov 2025 00:00:00 +0000
