@@ -56,7 +56,7 @@ class Config:
     activation_buttons: tuple[int, ...] = (e.BTN_FORWARD, e.BTN_EXTRA, e.BTN_SIDE, e.BTN_MIDDLE, e.BTN_RIGHT)
     # Scroll speed multiplier
     # Higher values = faster scrolling
-    scroll_speed: float = 30.0
+    scroll_speed: float = 21.0
     # Invert scroll direction
     # true = page scrolling (drag down to move the page contents down, which means moving the view up)
     # false = view scrolling (drag down to move the view down, which means moving the page contents up)
