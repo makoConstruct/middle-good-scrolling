@@ -44,10 +44,7 @@ systemctl enable --now defter-scrolling
    ./install.sh
    ```
 
-3. **Enable and start the service:**
-   ```bash
-   sudo systemctl enable --now defter-scrolling
-   ```
+   The install script will automatically enable and start the service.
 
 **To uninstall:**
 ```bash

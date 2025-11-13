@@ -110,25 +110,37 @@ echo -n "  - Reloading systemd daemon... "
 sudo systemctl daemon-reload
 echo -e "${GREEN}✓${NC}"
 
+# Enable and start service
+echo -n "  - Enabling and starting service... "
+sudo systemctl enable --now defter-scrolling.service
+echo -e "${GREEN}✓${NC}"
+
 echo ""
 echo -e "${GREEN}Installation complete!${NC}"
 echo ""
+
+# Check if service is running
+if systemctl is-active --quiet defter-scrolling.service; then
+    echo -e "${GREEN}✓${NC} defter-scrolling is now running!"
+else
+    echo -e "${YELLOW}⚠${NC} Service was installed but may not be running. Check status with:"
+    echo "   ${YELLOW}systemctl status defter-scrolling${NC}"
+fi
+
+echo ""
 echo "==================================="
-echo "  Next Steps:"
+echo "  Optional Configuration:"
 echo "==================================="
 echo ""
-echo "1. Enable and start the service:"
-echo "   ${YELLOW}sudo systemctl enable --now defter-scrolling${NC}"
-echo ""
-echo "2. Check the service status:"
-echo "   ${YELLOW}systemctl status defter-scrolling${NC}"
-echo ""
-echo "3. (Optional) Configure settings:"
+echo "1. To customize settings, copy the config file:"
 echo "   ${YELLOW}cp /etc/defter-scrolling.conf ~/.config/defter-scrolling.conf${NC}"
 echo "   Then edit ~/.config/defter-scrolling.conf"
 echo ""
-echo "4. After changing configuration, restart the service:"
+echo "2. After changing configuration, restart the service:"
 echo "   ${YELLOW}sudo systemctl restart defter-scrolling${NC}"
+echo ""
+echo "3. Check the service status anytime:"
+echo "   ${YELLOW}systemctl status defter-scrolling${NC}"
 echo ""
 echo "For more information, see: https://github.com/makoConstruct/middle-good-scrolling"
 echo ""
