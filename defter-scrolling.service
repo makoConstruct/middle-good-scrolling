@@ -1,5 +1,5 @@
 [Unit]
-Description=Middle Mouse Button Scroll Interceptor
+Description=a better way of scrolling, for mice
 After=multi-user.target
 Documentation=https://github.com/makoConstruct/middle-good-scrolling
 
