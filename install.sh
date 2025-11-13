@@ -87,13 +87,14 @@ echo ""
 echo "Installing files..."
 
 # Install binary
-echo -n "  - Installing binary to /usr/bin/... "
-sudo install -Dm755 defter-scrolling /usr/bin/defter-scrolling
+echo -n "  - Installing binary to /usr/local/bin/... "
+sudo install -Dm755 defter-scrolling /usr/local/bin/defter-scrolling
 echo -e "${GREEN}✓${NC}"
 
-# Install systemd service
-echo -n "  - Installing systemd service... "
-sudo install -Dm644 defter-scrolling.service /etc/systemd/system/defter-scrolling.service
+# Generate and install systemd service
+echo -n "  - Generating and installing systemd service... "
+./generate-service.sh /usr/local/bin/defter-scrolling /tmp/defter-scrolling.service.tmp > /dev/null
+sudo mv /tmp/defter-scrolling.service.tmp /etc/systemd/system/defter-scrolling.service
 echo -e "${GREEN}✓${NC}"
 
 # Install config file (only if it doesn't exist)
