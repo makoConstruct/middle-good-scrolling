@@ -1,0 +1,31 @@
+Source: defter-scrolling
+Section: utils
+Priority: optional
+Maintainer: makoConstruct <https://github.com/makoConstruct>
+Build-Depends: debhelper-compat (= 13)
+Standards-Version: 4.6.0
+Homepage: https://github.com/makoConstruct/middle-good-scrolling
+Vcs-Git: https://github.com/makoConstruct/middle-good-scrolling.git
+Vcs-Browser: https://github.com/makoConstruct/middle-good-scrolling
+
+Package: defter-scrolling
+Architecture: all
+Depends: ${misc:Depends},
+         python3,
+         python3-evdev,
+         python3-pyudev,
+         systemd
+Description: Better mouse scrolling for Linux
+ A better way of scrolling for mice. Makes it so that clicking your chosen
+ mouse button and dragging (anywhere on the page) is like clicking and
+ dragging the scrollbar handle.
+ .
+ Features:
+  * Bind scrolling to a comfortable button (forward button by default)
+  * Smoother and less rigid than libinput's middle-click scroll
+  * Supports horizontal/biaxial scrolling
+  * Only absorbs button clicks if you begin a drag
+  * Highly configurable via /etc/defter-scrolling.conf
+ .
+ This systemd service runs in the background to intercept mouse events
+ and provide an improved scrolling experience.

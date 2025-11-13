@@ -1,0 +1,6 @@
+defter-scrolling usr/bin
+defter-scrolling.conf etc
+defter-scrolling.service lib/systemd/system
+80-defter-scrolling.preset lib/systemd/system-preset
+README.md usr/share/doc/defter-scrolling
+LICENSE usr/share/doc/defter-scrolling

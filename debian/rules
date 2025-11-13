@@ -1,0 +1,10 @@
+#!/usr/bin/make -f
+
+%:
+	dh $@
+
+override_dh_auto_install:
+	# Skip auto-install, we use debian/install instead
+
+override_dh_installsystemd:
+	dh_installsystemd --name=defter-scrolling --enable --restart-after-upgrade
