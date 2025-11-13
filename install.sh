@@ -22,7 +22,7 @@ echo ""
 # Check for systemd
 if ! command -v systemctl &> /dev/null; then
     echo -e "${RED}Error: systemd is required but not found.${NC}"
-    echo "This script currently only supports systemd-based distributions."
+    echo "This package currently only supports systemd-based distributions."
     exit 1
 fi
 
@@ -91,9 +91,9 @@ echo -n "  - Installing binary to /usr/local/bin/... "
 sudo install -Dm755 defter-scrolling /usr/local/bin/defter-scrolling
 echo -e "${GREEN}✓${NC}"
 
-# Install systemd service
-echo -n "  - Installing systemd service... "
-sudo install -Dm644 defter-scrolling.service /etc/systemd/system/defter-scrolling.service
+# Generate and install systemd service
+echo -n "  - Generating and installing systemd service... "
+./generate-service.sh /usr/local/bin/defter-scrolling | sudo tee /etc/systemd/system/defter-scrolling.service > /dev/null
 echo -e "${GREEN}✓${NC}"
 
 # Install config file (only if it doesn't exist)
