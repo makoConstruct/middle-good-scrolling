@@ -113,7 +113,7 @@ sudo systemctl restart defter-scrolling
 
 We do this in a non-obvious, defter way than more common approaches like strict axis locking and hysteresis.
 
-We keep a vector that's basically the sum of the most recent mouse movements, but length-limited. This is like a smoothed out running average over recent movement. When this accumulator is over a certain length, we take its angle. We activate the axis it's closest to, leaving the other inactive. The other axis can be activated when the user intends.
+We keep a vector that's basically the sum of the most recent mouse movements, but length-limited. This is like a smoothed out running average over recent movement. When this accumulator is over a certain length, we take its angle. We activate the axis it's closest to, leaving the other inactive. The other axis can be activated later if the user points the accumulator towards it, and biaxial scrolling will begin.
 
 ### In relation to other scrolling modalities
 
