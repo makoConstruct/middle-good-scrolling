@@ -87,8 +87,8 @@ echo ""
 echo "Installing files..."
 
 # Install binary
-echo -n "  - Installing binary to /usr/local/bin/... "
-sudo install -Dm755 defter-scrolling /usr/local/bin/defter-scrolling
+echo -n "  - Installing binary to /usr/bin/... "
+sudo install -Dm755 defter-scrolling /usr/bin/defter-scrolling
 echo -e "${GREEN}✓${NC}"
 
 # Install systemd service

@@ -51,9 +51,9 @@ if [ -f /etc/systemd/system/defter-scrolling.service ]; then
 fi
 
 # Remove binary
-if [ -f /usr/local/bin/defter-scrolling ]; then
+if [ -f /usr/bin/defter-scrolling ]; then
     echo -n "  - Removing binary... "
-    sudo rm -f /usr/local/bin/defter-scrolling
+    sudo rm -f /usr/bin/defter-scrolling
     echo -e "${GREEN}✓${NC}"
 fi
 
