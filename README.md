@@ -25,26 +25,24 @@ systemctl enable --now defter-scrolling
 
 ### Other Linux Distributions (Ubuntu, Debian, Fedora, etc.)
 
-1. **Install dependencies:**
+1. (*dependencies*)
    ```bash
    # Ubuntu/Debian
    sudo apt install python3 python3-evdev python3-pyudev
-
    # Fedora
    sudo dnf install python3 python3-evdev python3-pyudev
-
-   # Or using pip
+   # or with Pip
    pip install --user evdev pyudev
    ```
 
-2. **Clone the repository and run the install script:**
+2.
    ```bash
    git clone https://github.com/makoConstruct/middle-good-scrolling.git
    cd middle-good-scrolling
    ./install.sh
    ```
 
-   The install script will automatically enable and start the service.
+The install script will automatically enable and start the service.
 
 **To uninstall:**
 ```bash
