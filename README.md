@@ -27,19 +27,14 @@ systemctl enable --now defter-scrolling
 
 We'd like to have a deb package. For now debian users can use the install script below.
 
-There's [a branch](https://github.com/makoConstruct/middle-good-scrolling/pull/13) where a debian package has been vibecoded. mako isn't a debian user so someone else will have to test and complete that. Debian's packaging format seems pretty gnarly so mako can't just eyeball it either.
+There's [a branch](https://github.com/makoConstruct/middle-good-scrolling/pull/13) where a debian package config has been generated. Debian's packaging format seems pretty gnarly so mako can't just eyeball it, a debian user will need to test this before we can merge it.
 
-### Other Linux Distributions (Ubuntu/Debian, Fedora, etc.)
+### General Linux Installer
 
 Get dependencies if needed:
-  ```bash
-  # Ubuntu/Debian
-  sudo apt install python3 python3-evdev python3-pyudev
-  # Fedora
-  sudo dnf install python3 python3-evdev python3-pyudev
-  # or with Pip
-  pip install --user evdev pyudev
-  ```
+Ubuntu/Debian `sudo apt install python3 python3-evdev python3-pyudev`
+Fedora `sudo dnf install python3 python3-evdev python3-pyudev`
+Or using pip `pip install --user evdev pyudev`
 
 Install:
   ```bash
