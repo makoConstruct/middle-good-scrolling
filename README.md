@@ -23,6 +23,41 @@ paru -S defter-scrolling
 systemctl enable --now defter-scrolling
 ```
 
+### NixOS / Nix
+
+For NixOS users, add to your configuration:
+
+```nix
+{
+  inputs.defter-scrolling.url = "github:makoConstruct/middle-good-scrolling";
+
+  # In your configuration.nix or flake outputs:
+  services.defter-scrolling = {
+    enable = true;
+    # Optional configuration:
+    settings = {
+      activationButtons = [ "BTN_FORWARD" "forward" "middle" ];
+      scrollSpeed = 22.0;
+      invertScroll = false;
+      dragSlop = 4.0;
+    };
+  };
+}
+```
+
+For Nix package manager users (non-NixOS):
+
+```bash
+# With flakes enabled:
+nix profile install github:makoConstruct/middle-good-scrolling
+
+# Or run directly:
+nix run github:makoConstruct/middle-good-scrolling
+
+# Traditional Nix:
+nix-env -f https://github.com/makoConstruct/middle-good-scrolling/archive/main.tar.gz -i
+```
+
 ### Debian
 
 We'd like to have a deb package. For now debian users can use the install script below.
