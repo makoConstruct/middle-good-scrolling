@@ -2,7 +2,6 @@
 , stdenv
 , python3
 , makeWrapper
-, bash
 }:
 
 stdenv.mkDerivation rec {
@@ -12,7 +11,7 @@ stdenv.mkDerivation rec {
   src = ./.;
 
   nativeBuildInputs = [ makeWrapper ];
-  buildInputs = [ python3 bash ];
+  buildInputs = [ python3 ];
 
   propagatedBuildInputs = with python3.pkgs; [
     evdev
@@ -20,11 +19,6 @@ stdenv.mkDerivation rec {
   ];
 
   dontBuild = true;
-
-  postPatch = ''
-    # Patch the shebang in generate-service.sh to use bash from Nix store
-    patchShebangs generate-service.sh
-  '';
 
   installPhase = ''
     runHook preInstall
@@ -39,9 +33,32 @@ stdenv.mkDerivation rec {
     # Install configuration file
     install -Dm644 defter-scrolling.conf $out/etc/defter-scrolling.conf
 
-    # Generate and install systemd service using the script
+    # Generate systemd service file
+    # Note: We generate this directly rather than using generate-service.sh
+    # because the shell script approach is problematic in Nix builds
     mkdir -p $out/lib/systemd/system
-    ./generate-service.sh $out/bin/defter-scrolling > $out/lib/systemd/system/defter-scrolling.service
+    cat > $out/lib/systemd/system/defter-scrolling.service << EOF
+[Unit]
+Description=a better way of scrolling, for mice
+After=multi-user.target
+Documentation=https://github.com/makoConstruct/middle-good-scrolling
+
+[Service]
+Type=simple
+ExecStart=$out/bin/defter-scrolling
+Restart=on-failure
+RestartSec=5s
+
+# Security hardening
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/dev/input /dev/uinput
+
+[Install]
+WantedBy=multi-user.target
+EOF
 
     # Install systemd preset
     install -Dm644 80-defter-scrolling.preset $out/lib/systemd/system-preset/80-defter-scrolling.preset
