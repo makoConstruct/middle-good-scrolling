@@ -21,11 +21,6 @@ stdenv.mkDerivation rec {
 
   dontBuild = true;
 
-  postPatch = ''
-    # Patch the shebang in generate-service.sh to use bash from Nix store
-    patchShebangs generate-service.sh
-  '';
-
   installPhase = ''
     runHook preInstall
 
@@ -41,6 +36,9 @@ stdenv.mkDerivation rec {
 
     # Generate and install systemd service using the script
     mkdir -p $out/lib/systemd/system
+    # Make executable and patch shebang before running
+    chmod +x generate-service.sh
+    patchShebangs generate-service.sh
     ./generate-service.sh $out/bin/defter-scrolling > $out/lib/systemd/system/defter-scrolling.service
 
     # Install systemd preset
