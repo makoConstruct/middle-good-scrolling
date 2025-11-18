@@ -12,18 +12,18 @@ from dataclasses import dataclass
 import time
 
 
-button_name_to_code_map = {
+button_friendly_name_to_code_map = {
     'middle': e.BTN_MIDDLE,
     'back': e.BTN_SIDE,
     'forward': e.BTN_EXTRA,
     'left': e.BTN_LEFT,
     'right': e.BTN_RIGHT,
 }
-button_code_to_name_map = {v: k for k, v in button_name_to_code_map.items()}
+button_code_to_name_map = {v: k for k, v in button_friendly_name_to_code_map.items()}
 def get_button_code(button_name: str) -> int | None:
     button_name_lower = button_name.lower().strip()
-    if button_name_lower in button_name_to_code_map:
-        return button_name_to_code_map[button_name_lower]
+    if button_name_lower in button_friendly_name_to_code_map:
+        return button_friendly_name_to_code_map[button_name_lower]
     else:
         return e.ecodes.get(button_name_lower)
 
@@ -54,26 +54,34 @@ class Config:
     # We recommend setting this to 'forward' if you have it (It's usually more comfortable to click, and it's used less often, and apps never use it for drag actions), but not everyone has it, so it defaults to middle after that, and if you don't have middle, it'll default to right click.
     # Options: middle, back_proper, back (which is officially called BTN_SIDE), forward_proper, forward (which is officially called BTN_EXTRA), left, right, You can also use any of the standard linux/input.h button codes.
     activation_buttons: tuple[int, ...] = (e.BTN_FORWARD, e.BTN_EXTRA, e.BTN_SIDE, e.BTN_MIDDLE, e.BTN_RIGHT)
+    
     # Scroll speed multiplier
     # Higher values = faster scrolling
     scroll_speed: float = 22.0
+    
     # Invert scroll direction
     # true = page scrolling (drag down to move the page contents down, which means moving the view up)
     # false = view scrolling (drag down to move the view down, which means moving the page contents up)
     invert_scroll: bool = False
+    
     # How far (in pixels) must be dragged before it'll consider it an intentional scroll and block the middle click events
     # Lower values = more sensitive. It's acceptable for this to be 1. It shouldn't be set to 0.
     drag_slop: float = 4.0
+    
     # the threshold within which it can switch axis without making a commitment
     axis_decision_threshold: float = 13.0
+    
     # if false, the software will do nothing and exit
     enable: bool = True
+    
     # the limit on the length of the accumulator vector. The lower it is, the faster the perceived angle will seem to change. If it's too low, input device jitter will cause incorrect scrolling. Needs to be higher than both horizontal_movement_threshold and vertical_movement_threshold.
-    accumulator_vector_limit: float = 5.0
+    accumulator_vector_limit: float = 16.0
+    
+    # temporarily enabled to see if it just feels better (I have been experiencing unintentional biaxial scrolling and right now it just feels doomed)
     # effectively disabled by default, I expect no one will ever enable it, maybe we should remove it.
     # when biaxial scrolling is started, axis_break_max_jump is how far should we be able to jump back towards the actual position of the mouse. If you set this to inf, it can in theory make the axis breaking more obedient to the user's mouse movements, going right where they placed the mouse. If you set it to a small value, it creates a little sort of pop motion when biaxial scrolling activates, which makes it very clear to the user how biaxial scrolling works. But I'm not sure they really need this tutorialized...
     # thinking about this is making me think that maybe we should switch to a less strict axis breaking system
-    axis_break_max_jump: float = 0.0
+    axis_break_max_jump: float = 4.0
 
 def load_config() -> Config:
     config = Config()
@@ -219,6 +227,7 @@ def handle_mouse(mouse, ui, state: State, config: Config):
                     elif event.value == 0:
                         # Send button click if we didn't scroll enough
                         if state.button_pressed and magnitude(state.drag_total) < config.drag_slop:
+                            print(f"Sending button click for {activation_button_code}")
                             ui.write(e.EV_KEY, activation_button_code, 1)
                             ui.write(e.EV_KEY, activation_button_code, 0)
                             ui.syn()

@@ -50,9 +50,9 @@ The install script will automatically enable and start the service.
 ./uninstall.sh
 ```
 
-### Other Platforms
+### Direct integration into desktop environments
 
-It would be nice to get these refinements adopted with libinput, if someone could help with that, it would be appreciated.
+It would be nice to get these refinements on click-scrolling adopted with libinput, if someone could help with that, it would be appreciated. We do plan to reach out to KDE.
 
 ## Configuration and Management
 
@@ -64,6 +64,8 @@ Config example (this is the default):
 
 ```ini
 [Settings]
+# ideally most of this would be measured in mms rather than pixels, I haven't looked into it. Generally, computers don't give you accurate mms per pixel. Device manufacturers (and desktop environments) are in a state of sin and don't even try to provide it. So we just use pixels.
+
 # The mouse buttons that can activate scrolling. Only the first one that is present on the mouse will be used, the rest are fallbacks.
 # We recommend setting this to 'forward' if you have it (It's usually more comfortable to click, and it's used less often, and apps never use it for drag actions), but not everyone has it, so it defaults to middle after that, and if you don't have middle, it'll default to right click.
 # Options: middle, back_proper, back (which is officially called BTN_SIDE), forward_proper, forward (which is officially called BTN_EXTRA), left, right, You can also use any of the standard linux/input.h button codes.
@@ -88,8 +90,8 @@ axis_decision_threshold = 13.0
 # if false, the software will do nothing and exit
 enable = true
 
-# the limit on the length of the accumulator vector. The lower it is, the faster the perceived angle will seem to change. If it's too low, input device jitter will cause incorrect scrolling.
-accumulator_vector_limit = 5.0
+# the limit on the length of the accumulator vector. The lower it is, the faster the perceived angle will seem to change. If it's too low, input device jitter will cause incorrect scrolling. Needs to be higher than both horizontal_movement_threshold and vertical_movement_threshold.
+accumulator_vector_limit = 16.0
 
 # effectively disabled by default, I expect no one will ever enable it, maybe we should remove it.
 # when biaxial scrolling is started, axis_break_max_jump is how far should we be able to jump back towards the actual position of the mouse. If you set this to inf, it can in theory make the axis breaking more obedient to the user's mouse movements, going right where they placed the mouse. If you set it to a small value, it creates a little sort of pop motion when biaxial scrolling activates, which makes it very clear to the user how biaxial scrolling works. But I'm not sure they really need this tutorialized...

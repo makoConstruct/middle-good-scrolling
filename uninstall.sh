@@ -20,9 +20,9 @@ echo "====================================="
 echo ""
 
 # Confirm uninstallation
-read -p "Are you sure you want to uninstall defter-scrolling? (y/N) " -n 1 -r
+read -p "Are you sure you want to uninstall defter-scrolling? (Y/n) " -n 1 -r
 echo
-if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+if [[ $REPLY =~ ^[Nn]$ ]]; then
     echo "Uninstallation cancelled."
     exit 0
 fi
@@ -60,9 +60,9 @@ fi
 # Ask about config file
 if [ -f /etc/defter-scrolling.conf ]; then
     echo ""
-    read -p "Remove system config file /etc/defter-scrolling.conf? (y/N) " -n 1 -r
+    read -p "Remove system config file /etc/defter-scrolling.conf? (Y/n) " -n 1 -r
     echo
-    if [[ $REPLY =~ ^[Yy]$ ]]; then
+    if [[ ! $REPLY =~ ^[Nn]$ ]]; then
         echo -n "  - Removing config file... "
         sudo rm -f /etc/defter-scrolling.conf
         echo -e "${GREEN}✓${NC}"
