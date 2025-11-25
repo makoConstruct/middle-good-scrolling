@@ -64,14 +64,14 @@ Config example (this is the default):
 
 ```ini
 [Settings]
-# ideally most of this would be measured in mms rather than pixels, I haven't looked into it. Generally, computers don't give you accurate mms per pixel. Device manufacturers (and desktop environments) are in a state of sin and don't even try to provide it. So we just use pixels.
+# ideally most of this would be measured in mms rather than pixels, I haven't looked into it, generally computers don't give you accurate mms per pixel, even android phones don't give hte os accurate info about that. Device manufacturers (and desktop environments) are in a state of sin and don't even try to provide it, or they tweak it to an arbitrary value that most suits the taste of whichever two or three non-designers in the company even know that the screen makes a claim to the os about its size. and it's never the true size. So instead we just measure in the unit of the amount of pixels that the mouse has moved.
 
 # The mouse buttons that can activate scrolling. Only the first one that is present on the mouse will be used, the rest are fallbacks.
 # We recommend setting this to 'forward' if you have it (It's usually more comfortable to click, and it's used less often, and apps never use it for drag actions), but not everyone has it, so it defaults to middle after that, and if you don't have middle, it'll default to right click.
 # Options: middle, back_proper, back (which is officially called BTN_SIDE), forward_proper, forward (which is officially called BTN_EXTRA), left, right, You can also use any of the standard linux/input.h button codes.
 activation_buttons = BTN_FORWARD, forward, back, middle, right
 
-# Scroll speed multiplier
+# The amount of scroll pixels sent through per mouse-pixel of movement
 # Higher values = faster scrolling
 scroll_speed = 22.0
 
@@ -80,11 +80,12 @@ scroll_speed = 22.0
 # false = view scrolling (drag down to move the view down, which means moving the page contents up)
 invert_scroll = false
 
-# How far (in pixels) must be dragged before it'll consider it an intentional scroll and block the middle click events
+# How far it must be dragged before it'll consider it an intentional scroll and block the activation button click events
 # Lower values = more sensitive. It's acceptable for this to be 1. It shouldn't be set to 0.
 drag_slop = 4.0
 
 # the threshold within which it can switch axis without making a commitment
+# also used to determine how long the accumulator vector needs to be before an axis break is allowed. Perhaps there should be a separate variable for that, but it's hard to have an opinion about it.
 axis_decision_threshold = 13.0
 
 # if false, the software will do nothing and exit
@@ -93,10 +94,11 @@ enable = true
 # the limit on the length of the accumulator vector. The lower it is, the faster the perceived angle will seem to change. If it's too low, input device jitter will cause incorrect scrolling. Needs to be higher than both horizontal_movement_threshold and vertical_movement_threshold.
 accumulator_vector_limit = 16.0
 
+# temporarily enabled to see if it just feels better (I have been experiencing unintentional biaxial scrolling and right now it just feels doomed)
 # effectively disabled by default, I expect no one will ever enable it, maybe we should remove it.
 # when biaxial scrolling is started, axis_break_max_jump is how far should we be able to jump back towards the actual position of the mouse. If you set this to inf, it can in theory make the axis breaking more obedient to the user's mouse movements, going right where they placed the mouse. If you set it to a small value, it creates a little sort of pop motion when biaxial scrolling activates, which makes it very clear to the user how biaxial scrolling works. But I'm not sure they really need this tutorialized...
 # thinking about this is making me think that maybe we should switch to a less strict axis breaking system
-axis_break_max_jump = 0.0
+axis_break_max_jump = 6.0
 ```
 
 After changing configuration, restart the service:

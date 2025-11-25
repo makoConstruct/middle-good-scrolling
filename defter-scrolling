@@ -47,7 +47,7 @@ def select_first_present_activation_button(button_codes: list[int], mouse_capabi
     return None
 
 
-# ideally most of this would be measured in mms rather than pixels, I haven't looked into it. Generally, computers don't give you accurate mms per pixel. Device manufacturers (and desktop environments) are in a state of sin and don't even try to provide it. So we just use the amount of pixels that the mouse has moved.
+# ideally most of this would be measured in mms rather than pixels, but that's not gonna be possible. Generally, computers don't give you accurate mms per pixel. So we just use the amount of pixels that the mouse has moved.
 @dataclass
 class Config:
     # The mouse buttons that can activate scrolling. Only the first one that is present on the mouse will be used, the rest are fallbacks.
@@ -131,6 +131,7 @@ class State:
     accumulator_vector: tuple[float, float] = (0.0, 0.0)
     # the drag that the mouse has undergone since drag start
     scroll_total: tuple[int, int] = (0, 0)
+    scroll_distance_total: float = 0.0
     # the drag that has currently actually gone through as scroll events
     drag_total_realized: tuple[int, int] = (0, 0)
     decided: bool = False
@@ -227,6 +228,7 @@ def handle_mouse(mouse, ui, state: State, config: Config):
     
     def move_by(d: tuple[int, int]):
         state.drag_total_realized = add(state.drag_total_realized, d)
+        state.scroll_distance_total += magnitude(d)
         if d[0] != 0:
             ui.write(e.EV_REL, e.REL_HWHEEL_HI_RES, d[0])
         if d[1] != 0:
@@ -242,8 +244,7 @@ def handle_mouse(mouse, ui, state: State, config: Config):
                         # Don't forward the press event, only send the click when we know we're not scrolling (on release)
                     elif event.value == 0:
                         # Send button click if we didn't scroll enough
-                        if state.button_pressed and magnitude(state.scroll_total)/config.scroll_speed < config.drag_slop:
-                            print(f"Sending button click for {activation_button_code}")
+                        if state.button_pressed and state.scroll_distance_total < config.drag_slop:
                             ui.write(e.EV_KEY, activation_button_code, 1)
                             # huh, you really do have to syn twice! Or else every app apparently just ignores these key events
                             ui.syn()
@@ -255,6 +256,7 @@ def handle_mouse(mouse, ui, state: State, config: Config):
                         state.accumulator_vector = (0.0, 0.0)
                         state.decided = False
                         state.scroll_total = (0, 0)
+                        state.scroll_distance_total = 0.0
                         state.drag_total_realized = (0, 0)
 
             elif event.type == e.EV_REL:
@@ -294,8 +296,6 @@ def handle_mouse(mouse, ui, state: State, config: Config):
                                 current = to_axis(state.scroll_total)
                                 previous = to_axis(previous_scroll_total)
                                 difference = subtract(current, previous)
-                                if is_more_horizontal_than_vertical(previous_scroll_total) != is_more_horizontal_than_vertical(state.scroll_total):
-                                    print(f"Difference: {difference}, previous: {previous}, current: {current}, previous_scroll_total: {previous_scroll_total}")
                                 move_by(difference)
                                 if is_more_horizontal_than_vertical(state.scroll_total):
                                     state.has_started_horizontal_scroll = True
