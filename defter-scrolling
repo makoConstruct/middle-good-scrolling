@@ -47,7 +47,7 @@ def select_first_present_activation_button(button_codes: list[int], mouse_capabi
     return None
 
 
-# ideally most of this would be measured in mms rather than pixels, I haven't looked into it. Generally, computers don't give you accurate mms per pixel. Device manufacturers (and desktop environments) are in a state of sin and don't even try to provide it. So we just use pixels.
+# ideally most of this would be measured in mms rather than pixels, I haven't looked into it. Generally, computers don't give you accurate mms per pixel. Device manufacturers (and desktop environments) are in a state of sin and don't even try to provide it. So we just use the amount of pixels that the mouse has moved.
 @dataclass
 class Config:
     # The mouse buttons that can activate scrolling. Only the first one that is present on the mouse will be used, the rest are fallbacks.
@@ -55,7 +55,7 @@ class Config:
     # Options: middle, back_proper, back (which is officially called BTN_SIDE), forward_proper, forward (which is officially called BTN_EXTRA), left, right, You can also use any of the standard linux/input.h button codes.
     activation_buttons: tuple[int, ...] = (e.BTN_FORWARD, e.BTN_EXTRA, e.BTN_SIDE, e.BTN_MIDDLE, e.BTN_RIGHT)
     
-    # Scroll speed multiplier
+    # The amount of scroll pixels sent through per mouse-pixel of movement
     # Higher values = faster scrolling
     scroll_speed: float = 22.0
     
@@ -64,11 +64,12 @@ class Config:
     # false = view scrolling (drag down to move the view down, which means moving the page contents up)
     invert_scroll: bool = False
     
-    # How far (in pixels) must be dragged before it'll consider it an intentional scroll and block the middle click events
+    # How far it must be dragged before it'll consider it an intentional scroll and block the activation button click events
     # Lower values = more sensitive. It's acceptable for this to be 1. It shouldn't be set to 0.
     drag_slop: float = 4.0
     
     # the threshold within which it can switch axis without making a commitment
+    # also used to determine how long the accumulator vector needs to be before an axis break is allowed. Perhaps there should be a separate variable for that, but it's hard to have an opinion about it.
     axis_decision_threshold: float = 13.0
     
     # if false, the software will do nothing and exit
@@ -81,7 +82,7 @@ class Config:
     # effectively disabled by default, I expect no one will ever enable it, maybe we should remove it.
     # when biaxial scrolling is started, axis_break_max_jump is how far should we be able to jump back towards the actual position of the mouse. If you set this to inf, it can in theory make the axis breaking more obedient to the user's mouse movements, going right where they placed the mouse. If you set it to a small value, it creates a little sort of pop motion when biaxial scrolling activates, which makes it very clear to the user how biaxial scrolling works. But I'm not sure they really need this tutorialized...
     # thinking about this is making me think that maybe we should switch to a less strict axis breaking system
-    axis_break_max_jump: float = 4.0
+    axis_break_max_jump: float = 6.0
 
 def load_config() -> Config:
     config = Config()
@@ -129,9 +130,9 @@ class State:
     button_pressed: bool = False
     accumulator_vector: tuple[float, float] = (0.0, 0.0)
     # the drag that the mouse has undergone since drag start
-    drag_total: tuple[float, float] = (0.0, 0.0)
+    scroll_total: tuple[int, int] = (0, 0)
     # the drag that has currently actually gone through as scroll events
-    drag_total_realized: tuple[float, float] = (0.0, 0.0)
+    drag_total_realized: tuple[int, int] = (0, 0)
     decided: bool = False
     has_started_horizontal_scroll: bool = False
     has_started_vertical_scroll: bool = False
@@ -148,6 +149,7 @@ def limited_vector_add(v: tuple[float, float], pull: tuple[float, float], limit:
     if m > limit:
         return multiply(nv, limit/m)
     return nv
+# none of this actually requires the inputs to be floats lmao (I am just now for the first time learning about python's compromised type system, they tried to hide it from us)
 def add(a: tuple[float, float], b: tuple[float, float]) -> tuple[float, float]:
     return (a[0] + b[0], a[1] + b[1])
 def subtract(a: tuple[float, float], b: tuple[float, float]) -> tuple[float, float]:
@@ -166,6 +168,12 @@ def smax(a: float, b: float) -> float:
     return a if abs(a) >= abs(b) else b
 def scroll_speed_for(distance_traveled: float, config: Config) -> int:
     return int(round(config.scroll_speed * distance_traveled * (-1 if config.invert_scroll else 1)))
+def scroll_for(d: tuple[float, float], config: Config) -> tuple[int, int]:
+    return (scroll_speed_for(d[0], config), -scroll_speed_for(d[1], config))
+def just_horizontal(d: tuple[float, float]) -> tuple[float, float]:
+    return (d[0], 0)
+def just_vertical(d: tuple[float, float]) -> tuple[float, float]:
+    return (0, d[1])
 
 def find_all_mice():
     context = pyudev.Context()
@@ -216,7 +224,15 @@ def handle_mouse(mouse, ui, state: State, config: Config):
     except (OSError, IOError) as ex:
         print(f"Failed to grab {mouse.name}: {ex}")
         return
-
+    
+    def move_by(d: tuple[int, int]):
+        state.drag_total_realized = add(state.drag_total_realized, d)
+        if d[0] != 0:
+            ui.write(e.EV_REL, e.REL_HWHEEL_HI_RES, d[0])
+        if d[1] != 0:
+            ui.write(e.EV_REL, e.REL_WHEEL_HI_RES, d[1])
+        ui.syn()
+    
     try:
         for event in mouse.read_loop():
             if event.type == e.EV_KEY and event.code == activation_button_code:
@@ -226,9 +242,11 @@ def handle_mouse(mouse, ui, state: State, config: Config):
                         # Don't forward the press event, only send the click when we know we're not scrolling (on release)
                     elif event.value == 0:
                         # Send button click if we didn't scroll enough
-                        if state.button_pressed and magnitude(state.drag_total) < config.drag_slop:
+                        if state.button_pressed and magnitude(state.scroll_total)/config.scroll_speed < config.drag_slop:
                             print(f"Sending button click for {activation_button_code}")
                             ui.write(e.EV_KEY, activation_button_code, 1)
+                            # huh, you really do have to syn twice! Or else every app apparently just ignores these key events
+                            ui.syn()
                             ui.write(e.EV_KEY, activation_button_code, 0)
                             ui.syn()
                         state.button_pressed = False
@@ -236,74 +254,68 @@ def handle_mouse(mouse, ui, state: State, config: Config):
                         state.has_started_vertical_scroll = False
                         state.accumulator_vector = (0.0, 0.0)
                         state.decided = False
-                        state.drag_total = (0.0, 0.0)
-                        state.drag_total_realized = (0.0, 0.0)
+                        state.scroll_total = (0, 0)
+                        state.drag_total_realized = (0, 0)
 
             elif event.type == e.EV_REL:
                 with state.lock:
                     if not state.button_pressed:
-                        # Forward events when middle button not pressed
+                        # Forward events when activation button not pressed
+                        ui.write(event.type, event.code, event.value)
+                        ui.syn()
+                    elif event.code != e.REL_X and event.code != e.REL_Y:
+                        # Forward other relative events unchanged
                         ui.write(event.type, event.code, event.value)
                         ui.syn()
                     else:
-                        previous_drag_total = state.drag_total
+                        # it's a scroll event
+                        
+                        # update drag total
+                        previous_scroll_total = state.scroll_total
+                        drag_distance = (0,0)
                         if event.code == e.REL_X:
-                            state.drag_total = add(state.drag_total, (event.value, 0.0))
+                            drag_distance = (event.value, 0)
                         elif event.code == e.REL_Y:
-                            state.drag_total = add(state.drag_total, (0.0, event.value))
-                        state.decided = state.decided or magnitude(state.drag_total) > config.axis_decision_threshold
-                        if (event.code == e.REL_X or event.code == e.REL_Y) and not state.decided:
+                            drag_distance = (0, event.value)
+                        scroll_distance = scroll_for(drag_distance, config)
+                        state.scroll_total = add(state.scroll_total, scroll_distance)
+                        state.accumulator_vector = limited_vector_add(state.accumulator_vector, scroll_distance, config.accumulator_vector_limit*config.scroll_speed)
+                        # we divide by scroll speed to get the amount of pixels the mouse has moved, as config parameters are in terms of that
+                        state.decided = state.decided or magnitude(state.scroll_total)/config.scroll_speed >= config.axis_decision_threshold
+                        
+                        if not state.decided:
                             # just snap to the axis that's closest to the drag total
-                            if previous_drag_total != state.drag_total:
+                            if previous_scroll_total != state.scroll_total:
                                 def to_axis(v: tuple[float, float]) -> tuple[float, float]:
                                     if is_more_horizontal_than_vertical(v):
-                                        return (v[0], 0.0)
+                                        return just_horizontal(v)
                                     else:
-                                        return (0.0, v[1])
-                                current = to_axis(state.drag_total)
-                                previous = to_axis(previous_drag_total)
+                                        return just_vertical(v)
+                                current = to_axis(state.scroll_total)
+                                previous = to_axis(previous_scroll_total)
                                 difference = subtract(current, previous)
-                                if difference[0] != 0:
-                                    ui.write(e.EV_REL, e.REL_HWHEEL_HI_RES, scroll_speed_for(difference[0], config))
-                                if difference[1] != 0:
-                                    ui.write(e.EV_REL, e.REL_WHEEL_HI_RES, -scroll_speed_for(difference[1], config))
-                                ui.syn()
-                                if is_more_horizontal_than_vertical(state.drag_total):
+                                if is_more_horizontal_than_vertical(previous_scroll_total) != is_more_horizontal_than_vertical(state.scroll_total):
+                                    print(f"Difference: {difference}, previous: {previous}, current: {current}, previous_scroll_total: {previous_scroll_total}")
+                                move_by(difference)
+                                if is_more_horizontal_than_vertical(state.scroll_total):
                                     state.has_started_horizontal_scroll = True
                                     state.has_started_vertical_scroll = False
                                 else:
                                     state.has_started_vertical_scroll = True
                                     state.has_started_horizontal_scroll = False
                         elif event.code == e.REL_X:
-                            state.drag_total = add(state.drag_total, (event.value, 0.0))
-                            state.accumulator_vector = limited_vector_add(state.accumulator_vector, (event.value, 0.0), config.accumulator_vector_limit)
-                            def move_by(d: float):
-                                state.drag_total_realized = add(state.drag_total_realized, (d, 0.0))
-                                ui.write(e.EV_REL, e.REL_HWHEEL_HI_RES, scroll_speed_for(d, config))
-                                ui.syn()
                             if state.has_started_horizontal_scroll:
-                                move_by(event.value)
-                            elif is_more_horizontal_than_vertical(state.accumulator_vector):
+                                move_by(just_horizontal(scroll_distance))
+                            elif magnitude(state.accumulator_vector)/config.scroll_speed > config.axis_decision_threshold and is_more_horizontal_than_vertical(state.accumulator_vector):
                                 state.has_started_horizontal_scroll = True
-                                move_by(smax(event.value, limit(state.drag_total[0], config.axis_break_max_jump)))
+                                move_by((smax(scroll_distance[0], limit(state.scroll_total[0], config.axis_break_max_jump)), 0))
                         elif event.code == e.REL_Y:
-                            state.drag_total = add(state.drag_total, (0.0, event.value))
-                            state.accumulator_vector = limited_vector_add(state.accumulator_vector, (0.0, event.value), config.accumulator_vector_limit)
-                            def move_by(d: float):
-                                state.drag_total_realized = add(state.drag_total_realized, (0.0, d))
-                                # I don't know why but it seems like we have to invert the vertical scroll direction but not the horizontal. Maybe mouse and X11 coordinates are vertically flipped?
-                                ui.write(e.EV_REL, e.REL_WHEEL_HI_RES, -scroll_speed_for(d, config))
-                                ui.syn()
                             if state.has_started_vertical_scroll:
-                                move_by(event.value)
-                            elif is_more_vertical_than_horizontal(state.accumulator_vector):
+                                move_by(just_vertical(scroll_distance))
+                            elif magnitude(state.accumulator_vector)/config.scroll_speed > config.axis_decision_threshold and is_more_vertical_than_horizontal(state.accumulator_vector):
                                 state.has_started_vertical_scroll = True
-                                move_by(smax(event.value, limit(state.drag_total[1], config.axis_break_max_jump)))
-                        else:
-                            # Forward other relative events unchanged
-                            ui.write(event.type, event.code, event.value)
-                            ui.syn()
-                        
+                                move_by((0, smax(scroll_distance[1], limit(state.scroll_total[1], config.axis_break_max_jump))))
+                    
 
             else:
                 # Forward all other events unchanged
