@@ -82,7 +82,7 @@ invert_scroll = false
 
 # How far it must be dragged before it'll consider it an intentional scroll and block the activation button click events
 # Lower values = more sensitive. It's acceptable for this to be 1. It shouldn't be set to 0.
-drag_slop = 4.0
+drag_slop = 3.0
 
 # the threshold within which it can switch axis without making a commitment
 # also used to determine how long the accumulator vector needs to be before an axis break is allowed. Perhaps there should be a separate variable for that, but it's hard to have an opinion about it.

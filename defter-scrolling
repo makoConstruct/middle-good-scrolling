@@ -66,7 +66,7 @@ class Config:
     
     # How far it must be dragged before it'll consider it an intentional scroll and block the activation button click events
     # Lower values = more sensitive. It's acceptable for this to be 1. It shouldn't be set to 0.
-    drag_slop: float = 4.0
+    drag_slop: float = 3.0
     
     # the threshold within which it can switch axis without making a commitment
     # also used to determine how long the accumulator vector needs to be before an axis break is allowed. Perhaps there should be a separate variable for that, but it's hard to have an opinion about it.
@@ -244,7 +244,7 @@ def handle_mouse(mouse, ui, state: State, config: Config):
                         # Don't forward the press event, only send the click when we know we're not scrolling (on release)
                     elif event.value == 0:
                         # Send button click if we didn't scroll enough
-                        if state.button_pressed and state.scroll_distance_total < config.drag_slop:
+                        if state.button_pressed and state.scroll_distance_total/config.scroll_speed < config.drag_slop:
                             ui.write(e.EV_KEY, activation_button_code, 1)
                             # huh, you really do have to syn twice! Or else every app apparently just ignores these key events
                             ui.syn()
