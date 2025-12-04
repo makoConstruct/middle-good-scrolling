@@ -4,11 +4,11 @@ A better way of scrolling, for mice.
 
 Makes it so that clicking your chosen mouse button and dragging (anywhere on the page) is like clicking and dragging the scrollbar handle (but better in various ways, see below).
 
-Many desktop environments offer functionality like this with middle click, but we allow (and recommend, and, by default, will be, if possible) binding it to a more comfortable button like the forward button, if you have one. Our implementation is different than libinput's/kde's in a way that feels smoother and less rigid. We're generally easier to configure than libinput stuff (*last we checked (late 2025) configuring libinput's middle click scroll behavior is currently difficult or impossible on wayland-kde*)
+Many desktop environments offer functionality like this with middle click, but we allow (and recommend, and, by default, will be, if possible) binding it to a more comfortable button like the forward button, if you have one. Our implementation is different than libinput's/kde's in a way that feels smoother and less rigid (*for the details, see [Design commentary](#design-commentary)*). We're generally easier to configure than libinput stuff (*last we checked (late 2025) configuring libinput's middle click scroll behavior is currently difficult or impossible on wayland-kde*)
 
 We also give you horizontal/biaxial scrolling, when you want it.
 
-Generally, defter scrolling wont interfere with other uses of the assigned button, since we only absorb the activation button click if you begin a drag. This will interfere with apps that use drags with that button, but such cases are very rare, and even in these cases (*eg, some graphics apps use middle-click scroll to pan the page*) apps generally provide alternative ways of doing those things (*eg, letting you pan by pressing space instead, which I've always thought was just as good.*).
+Generally, defter scrolling wont interfere with other uses of the assigned button, since we only absorb the activation button click if you begin a drag before releasing. This will interfere with apps that use drags with that button, but such cases are rare to nonexistent and even in the cases there are (*eg, some graphics apps use middle-click scroll to pan the page*) apps generally provide alternative ways of doing those things (*eg, letting you pan by pressing space instead, which I've always thought was fine, since these apps usually require you to have one hand on the keyboard anyway.*).
 
 If you're not convinced, see [Design commentary](#design-commentary). Or just give it a try and see how it feels!
 
