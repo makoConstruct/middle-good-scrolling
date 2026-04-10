@@ -424,28 +424,17 @@ def main():
 
     mice = find_all_mice()
 
-    # Create UInput with button and scroll wheel capabilities
-    # We need to forward all mouse events, so we need to get the capabilities from a mouse
-    if mice:
-        # Use the first mouse's capabilities as a template
-        mouse_caps = mice[0].capabilities()
-        cap = {}
-        if e.EV_KEY in mouse_caps:
-            cap[e.EV_KEY] = mouse_caps[e.EV_KEY]
-        if e.EV_REL in mouse_caps:
-            rel_caps = mouse_caps[e.EV_REL].copy()
-            # Ensure we have scroll wheel capabilities
-            scroll_caps = [e.REL_HWHEEL_HI_RES, e.REL_WHEEL_HI_RES]
-            for sc in scroll_caps:
-                if sc not in rel_caps:
-                    rel_caps.append(sc)
-            cap[e.EV_REL] = rel_caps
-    else:
-        # Fallback if no mice found (shouldn't happen)
-        cap = {
-            e.EV_KEY: [e.BTN_LEFT, e.BTN_RIGHT, e.BTN_MIDDLE],
-            e.EV_REL: [e.REL_X, e.REL_Y, e.REL_HWHEEL_HI_RES, e.REL_WHEEL_HI_RES],
-        }
+    # Create UInput with all mouse button and relative axis capabilities.
+    # UInput caps are immutable after creation, and the service may start
+    # before any mouse is plugged in, so we register the full range to
+    # ensure any hotplugged mouse's buttons can be forwarded.
+    # BTN_MOUSE (0x110) through 0x11f covers the entire mouse button group.
+    all_mouse_buttons = list(range(0x110, 0x120))
+    all_rel_axes = [getattr(e, name) for name in dir(e) if name.startswith('REL_') and name not in ('REL_MAX', 'REL_CNT')]
+    cap = {
+        e.EV_KEY: all_mouse_buttons,
+        e.EV_REL: all_rel_axes,
+    }
 
     ui = UInput(cap, name='defter-scroller')
     print(f"Created virtual input device: {ui.device.name}")
