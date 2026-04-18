@@ -4,9 +4,9 @@ A better way of scrolling, for mice.
 
 Makes it so that clicking your chosen mouse button and dragging (anywhere on the page) is like clicking and dragging the scrollbar handle (but better in various ways, see below).
 
-Many desktop environments offer functionality like this with middle click, but we allow (and recommend, and, by default, will be, if possible) binding it to a more comfortable button like the forward button, if you have one. Our implementation is different than libinput's/kde's in a way that feels smoother and less rigid (*for the details, see [Design commentary](#design-commentary)*). We're generally easier to configure than libinput stuff (*last we checked (late 2025) configuring libinput's middle click scroll behavior is currently difficult or impossible on wayland-kde*)
+Many desktop environments offer functionality like this with middle click, but we allow (and recommend, and, by default, will be, if possible) binding it to a more comfortable button like the forward button, if you have one. Our implementation is also different than libinput's/kde's in a way that feels smoother and less rigid (*for the details, see [Design commentary](#design-commentary)*). We're also much easier to configure than libinput stuff (*last we checked (late 2025) configuring libinput's middle click scroll behavior is currently difficult or impossible on wayland-kde*)
 
-We also give you horizontal/biaxial scrolling, when you want it.
+We also give you biaxial scrolling, when you want it.
 
 Generally, defter scrolling wont interfere with other uses of the assigned button, since we only absorb the activation button click if you begin a drag before releasing. This will interfere with apps that use drags with that button, but such cases are rare to nonexistent and even in the cases there are (*eg, some graphics apps use middle-click scroll to pan the page*) apps generally provide alternative ways of doing those things (*eg, letting you pan by pressing space instead, which I've always thought was fine, since these apps usually require you to have one hand on the keyboard anyway.*).
 
@@ -64,7 +64,7 @@ Config example (this is the default):
 
 ```ini
 [Settings]
-# ideally most of this would be measured in mms rather than pixels, I haven't looked into it, generally computers don't give you accurate mms per pixel, even android phones don't give hte os accurate info about that. Device manufacturers (and desktop environments) are in a state of sin and don't even try to provide it, or they tweak it to an arbitrary value that most suits the taste of whichever two or three non-designers in the company even know that the screen makes a claim to the os about its size. and it's never the true size. So instead we just measure in the unit of the amount of pixels that the mouse has moved.
+# ideally most of this would be measured in mms rather than pixels, I haven't looked into it, generally computers don't give you accurate mms per pixel, even android phones don't give the os accurate info about that. Device manufacturers (and desktop environments) are in a state of sin and don't even try to provide it, or they tweak it to an arbitrary value that most suits the taste of whichever two or three non-designers in the company even know that the screen makes a claim to the os about its size. and it's never the true size. So instead we just measure in the unit of the amount of pixels that the mouse has moved.
 
 # The mouse buttons that can activate scrolling. Only the first one that is present on the mouse will be used, the rest are fallbacks.
 # We recommend setting this to 'forward' if you have it (It's usually more comfortable to click, and it's used less often, and apps never use it for drag actions), but not everyone has it, so it defaults to middle after that, and if you don't have middle, it'll default to right click.
@@ -82,7 +82,7 @@ invert_scroll = false
 
 # How far it must be dragged before it'll consider it an intentional scroll and block the activation button click events
 # Lower values = more sensitive. It's acceptable for this to be 1. It shouldn't be set to 0.
-drag_slop = 3.0
+drag_slop = 2.0
 
 # the threshold within which it can switch axis without making a commitment
 # also used to determine how long the accumulator vector needs to be before an axis break is allowed. Perhaps there should be a separate variable for that, but it's hard to have an opinion about it.
