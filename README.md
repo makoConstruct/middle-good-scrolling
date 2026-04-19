@@ -4,7 +4,7 @@ A better way of scrolling, for mice.
 
 Makes it so that clicking your chosen mouse button and dragging (anywhere on the page) is like clicking and dragging the scrollbar handle (but better in various ways, see below).
 
-Many desktop environments offer functionality like this with middle click, but we allow (and recommend, and, by default, will be, if possible) binding it to a more comfortable button like the forward button, if you have one. Our implementation is also different than libinput's/kde's in a way that feels smoother and less rigid (*for the details, see [Design commentary](#design-commentary)*). We're also much easier to configure than libinput stuff (*last we checked (late 2025) configuring libinput's middle click scroll behavior is currently difficult or impossible on wayland-kde*)
+Many desktop environments offer functionality like this with middle click, but we allow (and recommend, and, by default, will be, if possible) binding it to a more comfortable button like the forward button, if you have one. Ours was programmed carefully to feel smoother and less rigid than libinput's/kde's as a result of not needing a dead zone and being capable of biaxial movement (*for the details, see [Design commentary](#design-commentary)*). We're also much easier to configure than libinput stuff (*last we checked (late 2025) configuring libinput's middle click scroll behavior is currently difficult or impossible on wayland-kde*)
 
 We also give you biaxial scrolling, when you want it.
 
